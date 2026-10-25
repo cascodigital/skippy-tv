@@ -67,9 +67,9 @@ body.apps #hint { opacity: 0; }
 @keyframes pisca { 50% { opacity: 0; } }
 body.apps #tx { opacity: 0; }
 /* easter egg: hiperespaço (Konami) */
-#warp { position: fixed; inset: 0; z-index: 99; display: none; background: radial-gradient(circle, rgba(92,225,255,.25), #000 70%); }
+#warp { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; z-index: 99;   /* fixed+inset usa a largura falsa do WebView da Amazon */ display: none; background: radial-gradient(circle, rgba(92,225,255,.25), #000 70%); }
 #warp.on { display: block; }
-#warp canvas { position: absolute; inset: 0; }
+#warp canvas { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
 #warp h1 { position: absolute; top: 470px; width: 100%; text-align: center; font-family: Orb; font-size: 64px; letter-spacing: 12px; color: #e6f8ff;
            text-shadow: 0 0 30px var(--cyan), 0 0 80px var(--cyan); }
 #warp h2 { position: absolute; top: 560px; width: 100%; text-align: center; font-family: Raj; font-size: 32px; color: #9fd8f0; }
@@ -227,7 +227,7 @@ function warp() {
   };
   step();
 }
-document.addEventListener('keydown', ev => { kseq.push(ev.key); kseq = kseq.slice(-8); if (kseq.join() === KON.join()) { kseq = []; warp(); } }, true);
+document.addEventListener('keydown', ev => { if (warping) { ev.stopPropagation(); ev.preventDefault(); return; } kseq.push(ev.key); kseq = kseq.slice(-8); if (kseq.join() === KON.join()) { kseq = []; row = 1; idx[1] = 0; focus(); warp(); ev.stopPropagation(); ev.preventDefault(); } }, true);
 </script>
 </body>
 </html>
