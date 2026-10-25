@@ -108,6 +108,33 @@ card (◀▶, 10 % steps), ◀ on any light goes to the camera, OK on the camera
   timed out only inside the app while the shell could connect. Fix (persists across reboots, not across a
   clean reinstall): `adb shell dumpsys deviceidle whitelist +dev.skippy.channel`.
 
+## Skippy's mouth (screen only, never sound)
+
+`cards/quips.py` reads the house every 15 s (all Home Assistant states, one hour of street-motion history,
+Plex sessions, the clock) and turns it into one-liners with a priority. `GET /api/quip` returns
+`{text, mood}` (`normal` cyan, `alerta` red, `rara` gold). Used by the Bridge panel ("TRANSMISSÃO",
+typed letter by letter every 20 s), the Fire TV home (line above the cards, every 30 s) and the
+"Ponte // Sala" card (its frame turns red/gold with the mood).
+
+- Priority bands: live street motion (100, but only if it is not a windy day — the Tapo fires 30+ times
+  an hour when the palm tree moves, so then it jokes about the palm tree instead), date eggs (90-95),
+  door open > 20 min (85), Plex playing/paused (80), 1-5 am (75), lights/climate/weekday (40-65),
+  personality lines (10). Below 85 it mixes the hottest topic, another real fact and personality, and
+  always picks the line said longest ago.
+- `binary_sensor.tapo_c206_person_detection` sticks at `on` (measured): the code uses `motion_alarm`.
+- The cards loop re-renders right away when motion or the door changes (checked every 20 s), not only
+  every 4 min. The camera card gets a red "MOVIMENTO NA RUA" strip, or a "último movimento há N min" tag.
+
+### Easter eggs
+- **Konami code** (↑↑↓↓←→←→) on the Bridge panel: *Protocolo Elder* — red alarm, fake planetary takeover
+  typed out, then "não toquei em nada". On the Fire TV home: a hyperspace jump. Screen only; nothing in
+  the house is touched.
+- **◀◀◀ on the camera** (Bridge panel): *Modo Mira* — the live camera goes full screen with a rotating
+  reticle and a target box that "classifies" made-up threats (palm tree, the neighbour's cat…).
+- 3 min without touching the remote on the Bridge panel: Skippy complains; the next key, he welcomes you back.
+- 1-in-120 legendary golden lines; 11:11, 13:37, midnight, Christmas, New Year, Friday the 13th.
+- Test without a remote: `/ponte?egg=elder`, `/ponte?egg=mira`.
+
 ## Build gotchas
 
 - No Gradle: `aapt2 compile/link` → `javac -source 8 -target 8` (+ `core-lambda-stubs.jar` on the bootclasspath) → `d8` → `zipalign` → `apksigner`.

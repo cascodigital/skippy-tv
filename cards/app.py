@@ -2,6 +2,7 @@
 import io, json, os, random, threading, time, urllib.parse, urllib.request
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageOps
+import quips
 
 PLEX = os.environ.get('PLEX_URL', 'http://192.168.2.46:32400')
 PLEX_TOKEN = os.environ['PLEX_TOKEN']
@@ -61,7 +62,10 @@ class dr:
 CUT = 40
 POLY = [(CUT, 0), (W, 0), (W, H - CUT), (W - CUT, H), (0, H), (0, CUT)]
 
-def frame(im, chip=None):
+MOOD = {'normal': CYAN, 'alerta': (255, 75, 85), 'rara': (255, 200, 80)}
+
+def frame(im, chip=None, col=None):
+    col = col or CYAN
     msk = Image.new('L', (W, H), 0); ImageDraw.Draw(msk).polygon(POLY, fill=255)
     out = Image.new('RGBA', (W, H), (0, 0, 0, 0)); out.paste(im, (0, 0), msk)
     sl = Image.new('RGBA', (W, H), (0, 0, 0, 0)); sd = ImageDraw.Draw(sl)
@@ -69,14 +73,14 @@ def frame(im, chip=None):
         sd.line([(0, y), (W, y)], fill=(0, 0, 0, 40))
     sl.putalpha(ImageChops.multiply(sl.split()[3], msk)); out.alpha_composite(sl)
     d = dr(out)
-    d.line(POLY + [POLY[0]], fill=CYAN + (150,), width=3)
-    d.line([(CUT + 14, 10), (CUT + 170, 10)], fill=CYAN + (240,), width=5)
-    d.line([(W - 190, H - 11), (W - CUT - 14, H - 11)], fill=CYAN + (240,), width=5)
+    d.line(POLY + [POLY[0]], fill=col + (150,), width=3)
+    d.line([(CUT + 14, 10), (CUT + 170, 10)], fill=col + (240,), width=5)
+    d.line([(W - 190, H - 11), (W - CUT - 14, H - 11)], fill=col + (240,), width=5)
     if chip:
         f = ORB(22); tw = d.textlength(chip, font=f)
         d.polygon([(30, 30), (30 + tw + 46, 30), (30 + tw + 62, 46), (30 + tw + 46, 62), (30, 62)], fill=NAVY + (210,))
-        d.line([(30, 30), (30 + tw + 46, 30), (30 + tw + 62, 46), (30 + tw + 46, 62), (30, 62), (30, 30)], fill=CYAN + (200,), width=2)
-        d.rectangle([40, 41, 49, 50], fill=CYAN + (255,))
+        d.line([(30, 30), (30 + tw + 46, 30), (30 + tw + 62, 46), (30 + tw + 46, 62), (30, 62), (30, 30)], fill=col + (200,), width=2)
+        d.rectangle([40, 41, 49, 50], fill=col + (255,))
         d.text((60, 33), chip, font=f, fill=(225, 248, 255, 255))
     return out
 
@@ -172,22 +176,29 @@ def card_episode(m, chip):
 COND = {'rainy': 'CHUVA', 'pouring': 'TEMPORAL', 'cloudy': 'NUBLADO', 'partlycloudy': 'PARCIALMENTE NUBLADO',
         'sunny': 'SOL', 'clear-night': 'CÉU LIMPO', 'fog': 'NEBLINA', 'windy': 'VENTO', 'lightning': 'RAIOS',
         'lightning-rainy': 'TEMPESTADE', 'snowy': 'NEVE', 'hail': 'GRANIZO', 'exceptional': 'ESTRANHO'}
-QUIPS = [
-    'Estou monitorando a casa. Tu, pelo visto, o sofá.',
-    'Sinais vitais da sala: aceitáveis. Os teus, discutíveis.',
-    'Escolhe logo. Eu já calculei os 3 finais.',
-    'Mais um episódio não vai te matar. Provavelmente.',
-    'Rede estável, Plex no ar. De nada, macaco.',
-    'Tua nave está pronta. O piloto, nem tanto.',
-    'Lembrete gentil: a lata pensa. Tu, às vezes.',
-    'Processando o universo. E a tua lista de pendências.',
-]
+
+# ---------- cérebro das frases (quips.py): contexto da casa com cache curto ----------
+_ctx = {'t': 0, 'c': None}
+def ctx():
+    if not _ctx['c'] or time.time() - _ctx['t'] > 15:
+        try:
+            _ctx['c'] = quips.context(HASS, HASS_TOKEN, PLEX, PLEX_TOKEN); _ctx['t'] = time.time()
+        except Exception as e:
+            print('ctx', e, flush=True)
+    return _ctx['c']
+
+def quip(where):
+    c = ctx()
+    if not c: return {'text': 'Sem contato com a casa. Ou ela me ignora, ou o Home Assistant caiu.', 'mood': 'alerta', 'where': where}
+    return quips.pick(c, where)
 
 def card_status():
+    q = quip('card')
     wall = Image.open(WALL).convert('RGB')
     bg = wall.crop((1500, 60, 1500 + 2200, 60 + 1238)).resize((W, H), Image.LANCZOS).convert('RGBA')
     bg.alpha_composite(Image.new('RGBA', (W, H), NAVY + (120,)))
-    im = frame(bg, 'PONTE // SALA')
+    col = MOOD.get(q['mood'], CYAN)
+    im = frame(bg, {'alerta': 'ALERTA // SKIPPY', 'rara': '★ RARA // SKIPPY'}.get(q['mood'], 'PONTE // SALA'), col)
     d = dr(im)
     t = hass('sensor.sala_temperatura')['state']; u = hass('sensor.sala_umidade')['state']
     tr = hass('sensor.0xa4c13822447901eb_temperature')['state']; ur = hass('sensor.0xa4c13822447901eb_humidity')['state']
@@ -204,10 +215,16 @@ def card_status():
     d.text((x, 270), f'{num(ur)}% UMID.', font=RAJ(34), fill=(215, 240, 255, 255))
     cond = COND.get(w['state'], w['state'].upper())
     d.text((x, 315), fit_text(d, cond, ORB(24), 360), font=ORB(24), fill=(235, 250, 255, 255))
-    random.seed(int(time.time() // 1800))
-    q = random.choice(QUIPS)
-    d.text((58, H - 100), fit_text(d, '“' + q + '”', RAJ(34), 840), font=RAJ(34), fill=(200, 230, 255, 235))
-    d.text((58, H - 58), 'SKIPPY  //  ELDER AI', font=ORB(16), fill=CYAN + (160,))
+    # frase em até duas linhas
+    words, lines, cur = ('“' + q['text'] + '”').split(), [], ''
+    for w_ in words:
+        if d.textlength((cur + ' ' + w_).strip(), font=RAJ(30)) > 840 and cur: lines.append(cur); cur = w_
+        else: cur = (cur + ' ' + w_).strip()
+    lines.append(cur); lines = lines[:2]
+    tcol = (255, 205, 205, 245) if q['mood'] == 'alerta' else (255, 228, 170, 245) if q['mood'] == 'rara' else (200, 230, 255, 235)
+    for i, ln in enumerate(lines):
+        d.text((58, H - 128 + i * 34 + (34 if len(lines) == 1 else 0)), fit_text(d, ln, RAJ(30), 860), font=RAJ(30), fill=tcol)
+    d.text((58, H - 50), 'SKIPPY  //  ELDER AI', font=ORB(16), fill=col + (170,))
     return im
 
 # ---------- luzes (lista branca: o painel só alcança estes 4 grupos) ----------
@@ -260,11 +277,23 @@ def card_camera():
     for y in range(H):
         sd.line([(0, y), (W, y)], fill=int(210 * max(0, (y - H * 0.5) / (H * 0.5)) ** 1.4))
     bg.paste(Image.new('RGBA', (W, H), NAVY + (255,)), (0, 0), sh)
-    im = frame(bg, 'AO VIVO // RUA')
+    c = ctx() or {}
+    mm = c.get('motion_min')
+    m1 = c.get('motion_1h') or 0
+    mov = (c.get('motion_on') or (mm is not None and mm < 3)) and m1 < 15   # com ventania não é alerta (ver quips.py)
+    im = frame(bg, 'MOVIMENTO // RUA' if mov else 'AO VIVO // RUA', MOOD['alerta'] if mov else None)
     d = dr(im)
     d.ellipse([W - 92, 34, W - 66, 60], fill=(255, 70, 70, 255))
+    if mov:
+        d.rectangle([0, 92, W, 150], fill=(160, 20, 30, 190))
+        d.text((58, 100), 'MOVIMENTO NA RUA ' + ('AGORA' if c.get('motion_on') or mm < 1 else f'HÁ {int(mm)} MIN'), font=ORB(30), fill=(255, 235, 235, 255))
+    elif mm is not None:
+        lab = f'último movimento {quips._min(mm)}' + (f' · {m1}/h' if m1 else '')
+        f_ = RAJ(26); tw = d.textlength(lab, font=f_)
+        d.rounded_rectangle([W - 60 - tw - 24, 86, W - 60, 126], 8, fill=NAVY + (200,))
+        d.text((W - 60 - tw - 12, 89), lab, font=f_, fill=(200, 230, 255, 235))
     glow_text(im, (56, H - 170), 'CÂMERA DA RUA', RAJB(76), r=6)
-    d.text((58, H - 88), 'OK para abrir ao vivo  ·  ' + time.strftime('%H:%M'), font=ORB(20), fill=CYAN + (230,))
+    d.text((58, H - 88), 'OK para abrir ao vivo // ' + __import__('datetime').datetime.now(quips.TZ).strftime('%H:%M'), font=ORB(20), fill=CYAN + (230,))
     return im
 
 def bulb(d, x, y, on, s=1.0):
@@ -292,7 +321,7 @@ def card_lights(st):
         lab = (f"{l['bri']}%" if l['dim'] and l['on'] else ('LIGADA' if l['on'] else 'DESLIGADA')) if l['ok'] else 'SEM SINAL'
         f2 = RAJB(34); tw = d.textlength(lab, font=f2)
         d.text((x + 85 - tw / 2, y + 192), lab, font=f2, fill=CYAN + (255,) if l['on'] else (110, 140, 170, 255))
-    d.text((58, H - 88), 'OK para o painel  ·  dimmer da sala no painel', font=ORB(20), fill=CYAN + (220,))
+    d.text((58, H - 88), 'OK para o painel // dimmer da sala no painel', font=ORB(20), fill=CYAN + (220,))
     return im
 
 def ponte_intent(focus):
@@ -354,9 +383,16 @@ def refresher():
                 state['feed'] = f; state['t'] = time.time()
         except Exception as e:
             print('refresh', e, flush=True)
-        for _ in range(TTL):
+        sig0 = alert_sig()
+        for i in range(TTL):
             time.sleep(1)
             if state['t'] == 0: break   # ação numa luz pede redesenho já
+            if i % 20 == 19 and alert_sig() != sig0: break   # movimento/porta mudou: cards de alerta já
+
+def alert_sig():
+    c = ctx() or {}
+    mm = c.get('motion_min')
+    return (bool((c.get('motion_on') or (mm is not None and mm < 3)) and (c.get('motion_1h') or 0) < 15), bool(c.get('door_open')))
 
 def feed():
     for _ in range(60):   # só no primeiro boot do container espera o primeiro render
@@ -383,6 +419,9 @@ class Handler(BaseHTTPRequestHandler):
         elif p == '/static/video-rtc.js':
             # player do go2rtc servido daqui: import de módulo de outra origem é barrado por CORS
             body = get(f'{GO2RTC}/video-rtc.js'); ct = 'text/javascript'
+        elif p == '/api/quip':
+            q = urllib.parse.parse_qs(self.path.split('?', 1)[1] if '?' in self.path else '')
+            body = json.dumps(quip(q.get('where', ['ponte'])[0]), ensure_ascii=False).encode(); ct = 'application/json'
         elif p == '/api/lights':
             body = json.dumps(lights_state()).encode(); ct = 'application/json'
         else:

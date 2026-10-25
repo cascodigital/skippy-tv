@@ -57,11 +57,28 @@ body.apps #stage { transform: translateY(-700px); }
 
 #hint { position: absolute; left: 0; right: 0; top: 1000px; text-align: center; font-family: Orb; font-size: 15px; letter-spacing: 4px; color: var(--mute); opacity: .8; }
 body.apps #hint { opacity: 0; }
+
+/* transmissão do Skippy na home */
+#tx { position: absolute; left: 96px; top: 210px; width: 1100px; font-family: Raj; font-weight: 600; font-size: 30px; color: #cfe8fb;
+      text-shadow: 0 2px 12px #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#tx b { font-family: Orb; font-weight: 500; font-size: 15px; letter-spacing: 4px; color: var(--cyan); margin-right: 14px; vertical-align: 4px; }
+#tx.alerta { color: #ffd2d6; } #tx.alerta b { color: #ff5560; } #tx.rara { color: #ffe6b0; } #tx.rara b { color: #ffc850; }
+#tx::after { content: '▌'; color: var(--cyan); animation: pisca .8s steps(2) infinite; }
+@keyframes pisca { 50% { opacity: 0; } }
+body.apps #tx { opacity: 0; }
+/* easter egg: hiperespaço (Konami) */
+#warp { position: fixed; inset: 0; z-index: 99; display: none; background: radial-gradient(circle, rgba(92,225,255,.25), #000 70%); }
+#warp.on { display: block; }
+#warp canvas { position: absolute; inset: 0; }
+#warp h1 { position: absolute; top: 470px; width: 100%; text-align: center; font-family: Orb; font-size: 64px; letter-spacing: 12px; color: #e6f8ff;
+           text-shadow: 0 0 30px var(--cyan), 0 0 80px var(--cyan); }
+#warp h2 { position: absolute; top: 560px; width: 100%; text-align: center; font-family: Raj; font-size: 32px; color: #9fd8f0; }
 </style>
 </head>
 <body>
 <div id="stage">
   <div id="clock"><b id="hh">--:--</b><span id="dd"></span><div id="net">CONECTANDO…</div></div>
+  <div id="tx"><b>SKIPPY //</b><span id="txt"></span></div>
   <div id="cards"><div class="track"></div></div>
   <div id="cardinfo"><b></b><span></span></div>
   <div id="dock"><div class="row"></div></div>
@@ -172,6 +189,45 @@ try {
 } catch (e) { console.log('apps ' + e); }
 render();
 loadFeed(); setInterval(loadFeed, 5 * 60 * 1000);
+</script>
+<div id="warp"><canvas id="wc" width="1920" height="1080"></canvas><h1 id="wt">SALTO HIPERESPACIAL</h1><h2 id="ws"></h2></div>
+<script>
+// transmissão: frase viva do skippy-cards, digitada
+const QUIP = 'http://192.168.2.46:8099/api/quip?where=home';
+let typing = null, lastQ = '';
+async function quip() {
+  try { const q = await (await fetch(QUIP, {cache: 'no-store'})).json(); if (q.text === lastQ) return; lastQ = q.text;
+    const el = document.getElementById('tx'), t = document.getElementById('txt'); el.className = q.mood; let i = 0; t.textContent = '';
+    clearInterval(typing); typing = setInterval(() => { t.textContent = q.text.slice(0, ++i); if (i >= q.text.length) clearInterval(typing); }, 30);
+  } catch (e) {}
+}
+quip(); setInterval(quip, 30000);
+
+// easter egg: código Konami → salto hiperespacial (estrelas esticando) e volta
+const KON = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight'];
+let kseq = [], warping = false;
+const DEST = ['Destino: Plex. Tempo estimado: 0 s. Distância percorrida: nenhuma.', 'Destino: a geladeira. Rota calculada.',
+  'Destino: Alfa Centauri. Cancelado: o Wi-Fi não pega lá.', 'Destino: o mesmo sofá. Viagem incrível, né?'];
+function warp() {
+  if (warping) return; warping = true;
+  const w = document.getElementById('warp'), c = document.getElementById('wc'), g = c.getContext('2d');
+  document.getElementById('ws').textContent = DEST[Math.floor(Math.random() * DEST.length)];
+  w.classList.add('on');
+  const S = Array.from({length: 400}, () => ({a: Math.random() * 6.283, r: Math.random() * 60, v: 2 + Math.random() * 6}));
+  let f = 0;
+  const step = () => {
+    g.fillStyle = 'rgba(0,4,12,.35)'; g.fillRect(0, 0, 1920, 1080);
+    const k = Math.min(1, f / 60);
+    S.forEach(s => { const r0 = s.r; s.r += s.v * (1 + k * 18); const x0 = 960 + Math.cos(s.a) * r0, y0 = 540 + Math.sin(s.a) * r0,
+      x1 = 960 + Math.cos(s.a) * s.r, y1 = 540 + Math.sin(s.a) * s.r;
+      g.strokeStyle = `rgba(${170 + 80 * k},235,255,${.5 + .5 * k})`; g.lineWidth = 1 + k * 2; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      if (s.r > 1200) { s.r = Math.random() * 40; } });
+    if (++f < 200) requestAnimationFrame(step); else { w.classList.remove('on'); g.clearRect(0, 0, 1920, 1080); warping = false; lastQ = '';
+      document.getElementById('txt').textContent = 'Salto concluído. Chegamos exatamente onde estávamos. De nada.'; }
+  };
+  step();
+}
+document.addEventListener('keydown', ev => { kseq.push(ev.key); kseq = kseq.slice(-8); if (kseq.join() === KON.join()) { kseq = []; warp(); } }, true);
 </script>
 </body>
 </html>

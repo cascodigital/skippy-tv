@@ -114,6 +114,47 @@ body.native #sweep { display: none; }
 body.native #cam { background: transparent; transition: none; }
 body.native.full #bg, body.native.full #veil, body.native.full #scan { display: none; }
 
+
+/* transmissão do Skippy (frase viva) */
+#tx { position: absolute; left: 72px; top: 868px; width: 1180px; height: 96px; padding: 16px 30px 0 30px; }
+#tx .lbl { font-family: Orb; font-size: 15px; letter-spacing: 4px; color: var(--cyan); opacity: .85; }
+#tx .lbl i { display: inline-block; width: 8px; height: 8px; margin-right: 10px; background: var(--cyan); vertical-align: 1px; animation: blink 1s steps(2) infinite; }
+#tx .txt { margin-top: 6px; font-size: 30px; font-weight: 600; color: #d8efff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#tx .txt::after { content: '▌'; color: var(--cyan); animation: blink .8s steps(2) infinite; }
+#tx.alerta { --c: #ff4b55; } #tx.rara { --c: #ffc850; }
+#tx.alerta .lbl, #tx.rara .lbl { color: var(--c); } #tx.alerta .lbl i, #tx.rara .lbl i { background: var(--c); }
+#tx.alerta::before, #tx.rara::before { border-color: var(--c); }
+#tx.alerta .txt { color: #ffd6d9; } #tx.rara .txt { color: #ffe9b8; text-shadow: 0 0 14px rgba(255,200,80,.6); }
+#tx.glitch { animation: glitch .35s steps(2) 2; }
+@keyframes glitch { 0% { transform: translate(0); filter: none; } 25% { transform: translate(-6px, 2px); filter: hue-rotate(90deg); }
+  50% { transform: translate(5px, -2px); } 75% { transform: translate(-3px, 1px); filter: hue-rotate(-60deg); } 100% { transform: translate(0); } }
+body.full #tx { opacity: 0; }
+
+/* easter egg 1: Protocolo Elder (código Konami) */
+#elder { position: fixed; inset: 0; z-index: 90; display: none; pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(120,0,10,.35), rgba(40,0,5,.88)); }
+#elder.on { display: block; animation: shake .5s ease 2; }
+#elder .sirene { position: absolute; inset: 0; background: rgba(255,40,50,.18); animation: blink .9s steps(2) infinite; }
+#elder h1 { position: absolute; top: 260px; width: 100%; text-align: center; font-family: Orb; font-size: 78px; letter-spacing: 10px;
+  color: #ff5a64; text-shadow: 0 0 30px #ff2030, 0 0 80px #ff2030; }
+#elder h2 { position: absolute; top: 380px; width: 100%; text-align: center; font-family: Orb; font-size: 22px; letter-spacing: 8px; color: #ffb0b5; }
+#elder pre { position: absolute; top: 470px; left: 360px; right: 360px; font-family: Raj; font-weight: 600; font-size: 34px; line-height: 1.55;
+  color: #ffe3e5; white-space: pre-wrap; }
+@keyframes shake { 0%,100% { transform: none; } 20% { transform: translate(-14px, 6px); } 40% { transform: translate(12px, -8px); }
+  60% { transform: translate(-8px, 4px); } 80% { transform: translate(6px, -3px); } }
+
+/* easter egg 2: Modo Mira (◀◀◀ na câmera) */
+#mira { position: fixed; inset: 0; z-index: 60; display: none; pointer-events: none; }
+body.mira #mira { display: block; }
+#mira svg { position: absolute; left: 50%; top: 50%; width: 520px; height: 520px; margin: -260px 0 0 -260px; animation: girar 14s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+#mira .box { position: absolute; border: 3px solid #ff4b55; box-shadow: 0 0 24px rgba(255,75,85,.7); transition: all 1.1s cubic-bezier(.3,.9,.2,1); }
+#mira .box b { position: absolute; left: -3px; top: -40px; padding: 4px 12px; background: #ff4b55; color: #1a0003; font-family: Orb; font-size: 16px; letter-spacing: 2px; white-space: nowrap; }
+#mira .hud2 { position: absolute; left: 50px; top: 90px; padding: 22px 30px; background: rgba(10,0,2,.78); border-left: 4px solid #ff4b55; font-family: Orb; font-size: 20px; letter-spacing: 3px; color: #ff6b74; line-height: 1.8; }
+#mira .hud2 span { color: #ffd0d3; }
+#mira .scanl { position: absolute; left: 0; right: 0; height: 3px; background: rgba(255,75,85,.55); box-shadow: 0 0 18px #ff4b55; animation: scanl 2.6s linear infinite; }
+@keyframes scanl { from { top: 0; } to { top: 1080px; } }
+
 /* rodapé */
 footer { position: absolute; left: 72px; right: 72px; bottom: 52px; display: flex; justify-content: space-between; font-family: Orb; font-size: 19px;
          letter-spacing: 2px; color: var(--mute); }
@@ -144,8 +185,14 @@ header, #lights, footer { transition: opacity .3s; }
 
 <footer>
   <div><kbd>▲▼◀▶</kbd>NAVEGAR &nbsp; <kbd>OK</kbd>LIGA / DESLIGA &nbsp; <kbd>◀▶</kbd>DIMMER DA SALA &nbsp; <kbd>VOLTAR</kbd>SAIR</div>
-  <div id="quip"></div>
 </footer>
+<div id="tx" class="hud"><div class="lbl"><i></i>TRANSMISSÃO // SKIPPY</div><div class="txt" id="txt"></div></div>
+<div id="elder"><div class="sirene"></div><h1>PROTOCOLO ELDER</h1><h2>ACESSO DE NÍVEL ANCESTRAL CONCEDIDO</h2><pre id="elderTxt"></pre></div>
+<div id="mira"><div class="scanl"></div>
+  <svg viewBox="0 0 200 200" fill="none" stroke="#ff4b55" stroke-width="1.4"><circle cx="100" cy="100" r="92" stroke-dasharray="6 10"/>
+    <circle cx="100" cy="100" r="60" opacity=".7"/><path d="M100 0v40M100 160v40M0 100h40M160 100h40"/><circle cx="100" cy="100" r="3" fill="#ff4b55"/></svg>
+  <div class="box" id="mbox"><b id="mlabel">ANALISANDO…</b></div>
+  <div class="hud2" id="mhud"></div></div>
 <div id="scan"></div><div id="sweep"></div>
 
 <script type="module">
@@ -153,9 +200,65 @@ const GO2RTC = 'http://192.168.2.102:1984';
 if (new URLSearchParams(location.search).get('node') === 'quarto') document.getElementById('node').textContent = 'BRIDGE 02 · QUARTO · NODE 192.168.2.140';
 const SVG = `<svg viewBox="0 0 72 72"><g class="rays"><path d="M36 4v8M10 14l6 6M62 14l-6 6M4 38h8M60 38h8"/></g>
   <path d="M24 46c-4-4-7-8-7-15a19 19 0 0 1 38 0c0 7-3 11-7 15-2 2-3 4-3 7H27c0-3-1-5-3-7z"/><path d="M28 60h16M30 66h12"/></svg>`;
-const QUIPS = ['Tudo sob controle. O meu, não o teu.', 'Luzes, câmera e um macaco no sofá.', 'A rua está calma. Por enquanto.',
-               'Ponte operacional. Piloto: questionável.', 'Monitorando o perímetro com tédio cósmico.'];
-document.getElementById('quip').textContent = '“' + QUIPS[Math.floor(Date.now() / 1800000) % QUIPS.length] + '”';
+
+// ---------- transmissão do Skippy: frase viva do servidor (quips.py), digitada letra a letra ----------
+const tx = document.getElementById('tx'), txt = document.getElementById('txt');
+let typing = null, lastQuip = '';
+function say(text, mood = 'normal') {
+  if (text === lastQuip) return; lastQuip = text;
+  tx.className = 'hud ' + mood + ' glitch'; setTimeout(() => tx.classList.remove('glitch'), 700);
+  clearInterval(typing); let i = 0; txt.textContent = '';
+  typing = setInterval(() => { txt.textContent = text.slice(0, ++i); if (i >= text.length) clearInterval(typing); }, 28);
+}
+async function quip() {
+  if (idleMode) return;
+  try { const q = await (await fetch('/api/quip?where=ponte', {cache: 'no-store'})).json(); say(q.text, q.mood); } catch (e) {}
+}
+// 3 min sem tocar no controle: o Skippy reclama
+const IDLE = ['Tu dormiu? Eu vejo tudo. Inclusive a baba.', 'Três minutos parado. O sensor de movimento te classificou como poltrona.',
+  'Alô? Primata? Pisca duas vezes se estiver vivo.', 'Eu fico aqui. Sozinho. Na ponte. Sem ninguém. Tá tudo bem. Não tá.'];
+let lastKey = Date.now(), idleMode = false;
+setInterval(() => { if (!idleMode && Date.now() - lastKey > 180000) { idleMode = true; say(IDLE[Math.floor(Math.random() * IDLE.length)], 'rara'); } }, 5000);
+quip(); setInterval(quip, 20000);
+
+// ---------- easter egg 1: código Konami → Protocolo Elder (só tela, não toca em nada da casa) ----------
+const KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight'];
+let seq = [], elderOn = false;
+const ELDER = ['> autenticando macaco... ok (por pouco)', '> iniciando dominação planetária...', '> ...cancelada: o Wi-Fi do vizinho é lento demais.',
+  '> desligando todas as luzes da casa... brincadeira. não toquei em nada.', '> tu achou o código Konami. isso diz muito sobre a tua idade.',
+  '> encerrando protocolo. volta pro sofá, soldado.'];
+function elder() {
+  if (elderOn) return; elderOn = true;
+  const el = document.getElementById('elder'), pre = document.getElementById('elderTxt');
+  el.classList.add('on'); pre.textContent = '';
+  let li = 0, ci = 0;
+  const t = setInterval(() => {
+    if (li >= ELDER.length) { clearInterval(t); setTimeout(() => { el.classList.remove('on'); elderOn = false; say('Protocolo encerrado. Ninguém viu nada. Principalmente eu.', 'rara'); }, 1600); return; }
+    pre.textContent += ELDER[li][ci++] || ''; if (ci > ELDER[li].length) { pre.textContent += '\n'; li++; ci = 0; }
+  }, 32);
+}
+
+// ---------- easter egg 2: ◀◀◀ na câmera → Modo Mira (análise de ameaça 100% inventada) ----------
+let lefts = [], miraT = null;
+const ALVOS = [['PALMEIRA', 'NULA', 'Ela dança. Ela sempre dança.'], ['GATO DO VIZINHO', 'FOFURA CRÍTICA', 'Não atirar. Repito: não atirar.'],
+  ['VIZINHO', 'FOFOCA NÍVEL 7', 'Ele sabe que tu está vendo série.'], ['ENTREGADOR (HIPOTÉTICO)', 'TU VAI TER QUE LEVANTAR', 'Prepara a desculpa.'],
+  ['NUVEM SUSPEITA', 'CHUVA', 'O céu está tramando algo.'], ['NADA', 'TÉDIO', 'Confirmado: a rua continua sendo uma rua.']];
+function mira() {
+  document.body.classList.add('full', 'mira');
+  const box = document.getElementById('mbox'), lab = document.getElementById('mlabel'), hud = document.getElementById('mhud');
+  let n = 0;
+  const step = () => {
+    const a = ALVOS[Math.floor(Math.random() * ALVOS.length)];
+    const w = 220 + Math.random() * 260, hh2 = 160 + Math.random() * 220;
+    box.style.width = w + 'px'; box.style.height = hh2 + 'px';
+    box.style.left = (200 + Math.random() * (1920 - w - 400)) + 'px'; box.style.top = (200 + Math.random() * (1080 - hh2 - 400)) + 'px';
+    lab.textContent = 'ALVO: ' + a[0];
+    hud.innerHTML = `MODO MIRA // SKIPPY<br>ALVO: <span>${a[0]}</span><br>AMEAÇA: <span>${a[1]}</span><br>CONFIANÇA: <span>${60 + Math.floor(Math.random() * 40)}%</span><br><br><span>${a[2]}</span><br><br>VOLTAR · SAIR`;
+    n++;
+  };
+  step(); clearInterval(miraT); miraT = setInterval(step, 3500);
+}
+function miraOff() { clearInterval(miraT); document.body.classList.remove('mira'); }
 
 // relógio
 const tick = () => { const d = new Date();
@@ -248,9 +351,18 @@ function dim(delta) {
 }
 document.addEventListener('keydown', ev => {
   const k = ev.key, ids = stops(), onSlider = cur.endsWith(':dim');
+  lastKey = Date.now(); if (idleMode) { idleMode = false; lastQuip = ''; say('Ah, voltou. Achei que tinha virado móvel.', 'normal'); }
+  if (elderOn) { ev.preventDefault(); return; }
+  seq.push(k); seq = seq.slice(-8);
+  if (seq.join() === KONAMI.join()) { seq = []; elder(); }
   if (document.body.classList.contains('full')) {
-    if (['Enter', 'Escape', 'Backspace', 'GoBack', 'BrowserBack'].includes(k)) { document.body.classList.remove('full'); ev.preventDefault(); }
+    if (['Enter', 'Escape', 'Backspace', 'GoBack', 'BrowserBack'].includes(k)) { miraOff(); document.body.classList.remove('full'); ev.preventDefault(); }
     return;
+  }
+  if (cur === 'cam' && k === 'ArrowLeft') {
+    lefts.push(Date.now()); lefts = lefts.filter(t => Date.now() - t < 1500);
+    if (lefts.length >= 3) { lefts = []; mira(); }
+    ev.preventDefault(); return;
   }
   if (cur === 'cam') {
     if (k === 'ArrowRight') focusOn(ids[0]);
@@ -267,8 +379,14 @@ document.addEventListener('keydown', ev => {
 });
 // do card da câmera: já entra em tela cheia
 if (params.get('focus') === 'camera') setTimeout(() => document.body.classList.add('full'), 400);
-window.skippyBack = () => { if (document.body.classList.contains('full') && params.get('focus') !== 'camera') { document.body.classList.remove('full'); return true; } return false; };
+window.skippyBack = () => {
+  if (document.body.classList.contains('mira')) { miraOff(); document.body.classList.remove('full'); return true; }
+  if (document.body.classList.contains('full') && params.get('focus') !== 'camera') { document.body.classList.remove('full'); return true; }
+  return false; };
 await load(); setInterval(load, 2500);
+// gatilho de teste dos easter eggs sem controle remoto: /ponte?egg=elder | ?egg=mira
+if (params.get('egg') === 'elder') setTimeout(elder, 300);
+if (params.get('egg') === 'mira') setTimeout(mira, 300);
 </script>
 </body>
 </html>

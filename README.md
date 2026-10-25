@@ -48,7 +48,8 @@ Fire OS / older Android), what to change, in which order, and the traps we alrea
 ├── anim.py             animated wallpaper: raw RGB frames → ffmpeg (parallax stars, drifting nebula, radar, shooting star)
 ├── build-iconpack.sh   "Skippy Icon Pack" APK (ADW icon-pack format, no code) for Projectivy
 ├── cards/              skippy-cards: Python server (Docker) that renders the HUD cards and serves the Bridge panel
-│   ├── app.py          /feed.json, /c/*.png, /ponte, /api/lights, POST /api/light (allow-list)
+│   ├── app.py          /feed.json, /c/*.png, /ponte, /api/lights, POST /api/light (allow-list), /api/quip
+│   ├── quips.py        Skippy's lines: reads the house (HA, Plex, clock) and picks a context-aware joke
 │   └── ponte.html      Bridge panel UI (D-pad driven)
 ├── channel-app/        Android app dev.skippy.channel (plain Java, no Gradle)
 │   ├── src/…/Sync.java     pulls the feed → Watch Next + preview channel (Android 8+)
@@ -97,6 +98,12 @@ adb -s 192.168.2.140:5555 install -r dist/skippy-channel.apk                    
 adb -s <device> shell dumpsys deviceidle whitelist +dev.skippy.channel                  # both: Doze would cut its network
 adb -s 192.168.2.140:5555 shell appops set dev.skippy.channel GET_USAGE_STATS allow      # Fire TV only (Watch)
 ```
+
+## Easter eggs
+
+Konami code on the Bridge panel or the Fire TV home, ◀◀◀ on the live camera, golden legendary lines,
+date jokes. Details (and how to trigger them without a remote) in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#easter-eggs).
+Skippy only talks on screen — never through speakers.
 
 ## Security notes
 
