@@ -26,7 +26,7 @@ import org.json.JSONObject;
 public class Sync extends BroadcastReceiver {
     static final String TAG = "SkippyChannel";
     static final String FEED = "http://192.168.2.46:8099/feed.json";
-    static final long EVERY = 10 * 60 * 1000L;
+    static final long EVERY = 2 * 60 * 1000L;   // Shield: card de luzes atualizado em até ~2 min
 
     @Override public void onReceive(Context ctx, Intent i) {
         Watch.start(ctx, Intent.ACTION_BOOT_COMPLETED.equals(i.getAction()));   // Fire TV: vigia da home sobe no boot
@@ -121,7 +121,7 @@ public class Sync extends BroadcastReceiver {
         AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
         PendingIntent pi = PendingIntent.getBroadcast(ctx, 0,
             new Intent(ctx, Sync.class).setAction("dev.skippy.channel.SYNC"), PendingIntent.FLAG_IMMUTABLE);
-        am.setInexactRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + EVERY, EVERY, pi);
+        am.setRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + EVERY, EVERY, pi);
     }
 
     static String get(String url) throws Exception {

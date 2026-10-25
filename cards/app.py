@@ -403,7 +403,8 @@ def refresher():
 def alert_sig():
     c = ctx() or {}
     mm = c.get('motion_min')
-    return (bool((c.get('motion_on') or (mm is not None and mm < 3)) and (c.get('motion_1h') or 0) < 15), bool(c.get('door_open')))
+    return (bool((c.get('motion_on') or (mm is not None and mm < 3)) and (c.get('motion_1h') or 0) < 15), bool(c.get('door_open')),
+            tuple(sorted((c.get('lights') or {}).items())))   # luz mudou: card de luzes redesenha em até ~20 s
 
 def feed():
     for _ in range(60):   # só no primeiro boot do container espera o primeiro render

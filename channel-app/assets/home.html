@@ -189,7 +189,7 @@ try {
             img: 'banners/banner-apps.png'});
 } catch (e) { console.log('apps ' + e); }
 render();
-loadFeed(); setInterval(loadFeed, 5 * 60 * 1000);
+loadFeed(); setInterval(loadFeed, 30 * 1000);   // o feed é cache do servidor (~30 ms)
 </script>
 <div id="warp"><canvas id="wc" width="1920" height="1080"></canvas><h1 id="wt">SALTO HIPERESPACIAL</h1><h2 id="ws"></h2></div>
 <script>

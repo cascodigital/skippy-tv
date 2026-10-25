@@ -1,31 +1,72 @@
+<div align="center">
+
 # Skippy TV
 
-A sci-fi "starship bridge" home screen for Android TV boxes, wired to a real house:
-an animated wallpaper, neon app banners, live cards (Plex *continue watching*, room
-climate from Home Assistant, a street-camera snapshot, light status) and a **Bridge
-panel** with the street camera **live** (~1 s latency, hardware decoded) and the house
-lights (on/off + dimmer).
+**A sci-fi starship-bridge home screen for Android TV — wired to a real house.**
 
-Runs on two very different devices:
+Animated space wallpaper · neon app banners · live Plex and Home Assistant cards ·
+a live street camera at ~1 s latency · house lights with dimmer · an AI with an attitude problem.
 
-| Device | OS | How it is themed |
+![Android TV](https://img.shields.io/badge/Android%20TV-7.1%2B-3DDC84?logo=android&logoColor=white)
+![Fire TV](https://img.shields.io/badge/Fire%20TV-Fire%20OS%206-FF9900?logo=amazon&logoColor=white)
+![NVIDIA Shield](https://img.shields.io/badge/NVIDIA%20Shield-1st%20gen-76B900?logo=nvidia&logoColor=white)
+![Home Assistant](https://img.shields.io/badge/Home%20Assistant-REST-41BDF5?logo=homeassistant&logoColor=white)
+![Plex](https://img.shields.io/badge/Plex-continue%20watching-EBAF00?logo=plex&logoColor=white)
+![License: MIT](https://img.shields.io/badge/license-MIT-blue)
+
+![Animated wallpaper](docs/screenshots/wallpaper.gif)
+
+</div>
+
+## What it looks like
+
+![Fire TV home: Skippy talking above live cards](docs/screenshots/firetv-home.jpg)
+<sub>Fire TV launcher. The line above the cards is Skippy reading the house — here a real alert: the living-room door had been open for 22 minutes.</sub>
+
+![NVIDIA Shield home](docs/screenshots/shield-home.jpg)
+<sub>NVIDIA Shield with Projectivy: animated wallpaper, the Skippy icon pack and cards in the *Watch Next* row.</sub>
+
+| The Bridge: live camera + lights | Camera full screen |
+|---|---|
+| ![Bridge panel](docs/screenshots/bridge.jpg) | ![Camera](docs/screenshots/shield-camera-fullscreen.jpg) |
+
+| Fire TV — all apps | The banners |
+|---|---|
+| ![All apps](docs/screenshots/firetv-all-apps.jpg) | ![Banners](docs/screenshots/banners.png) |
+
+## Skippy talks (on screen, never out loud)
+
+Skippy is the Elder AI from *Expeditionary Force*: brilliant, arrogant, stuck in a TV box. Every 15 s he reads
+the house — Home Assistant, the street camera's motion history, Plex, the clock — and picks a line:
+
+> *"27 motion alarms in the last hour. Either a very indecisive burglar, or the wind."* &nbsp;·&nbsp;
+> *"Living-room door open for 27 min. Is that an invitation or did you forget, monkey?"* &nbsp;·&nbsp;
+> *"Kitchen lights on at 3 am. I know what you are about to do. So does the fridge."*
+
+Red frame for alerts (real street motion, door left open), gold for rare and dated lines (11:11, 13:37, Christmas,
+Friday the 13th, a 1-in-120 legendary). Windy days don't count: the palm tree triggers the camera 30 times an hour,
+so Skippy keeps score instead — *"Last hour: palm tree 28, burglars 0."* (Lines are in Brazilian Portuguese.)
+
+### Easter eggs
+
+| Konami code on the Bridge → *Protocolo Elder* | ◀◀◀ on the camera → *Modo Mira* | Konami on the Fire TV home → hyperspace |
 |---|---|---|
-| NVIDIA Shield (living room) | Android TV 11 | [Projectivy Launcher](https://play.google.com/store/apps/details?id=com.spocky.projengmenu) + a custom icon pack + cards published as Android TV *Watch Next* |
-| Fire TV Stick 4K, 1st gen (bedroom) | Fire OS 6 (Android 7.1) | A **custom launcher** (`Home` activity), because Projectivy needs Android 10 |
+| ![Protocolo Elder](docs/screenshots/egg-elder.jpg) | ![Modo Mira](docs/screenshots/egg-mira.jpg) | ![Hyperspace](docs/screenshots/egg-hyperspace.jpg) |
 
-![Shield home](docs/screenshots/shield-home.jpg)
+None of them touch the house: the planetary takeover is cancelled because *"the neighbour's Wi-Fi is too slow"*.
 
-| Bridge panel (camera + lights) | Camera full screen |
-|---|---|
-| ![Bridge](docs/screenshots/shield-ponte.jpg) | ![Camera](docs/screenshots/shield-camera-fullscreen.jpg) |
+## Where it runs
 
-| Fire TV launcher | Fire TV — all apps |
-|---|---|
-| ![Fire TV home](docs/screenshots/firetv-home.jpg) | ![Fire TV apps](docs/screenshots/firetv-all-apps.jpg) |
+| Device | Status | How it is themed |
+|---|---|---|
+| **NVIDIA Shield TV, 1st gen** (2015, Tegra X1) — Android TV 11 | ✅ tested daily | [Projectivy Launcher](https://play.google.com/store/apps/details?id=com.spocky.projengmenu) + the Skippy icon pack + cards in Android TV *Watch Next* |
+| **Amazon Fire TV Stick 4K, 1st gen** (AFTMM) — Fire OS 6 / Android 7.1 | ✅ tested daily | Custom launcher (`Home` activity) — Projectivy needs Android 10 |
+| Any other Android TV / Google TV (Chromecast with Google TV, Mi Box, TCL, Philips…) | ⚠️ should work, not tested | Android TV 10+: the Shield path. Older Android or Fire OS: the Fire TV path |
 
-Animated wallpaper (24 s seamless loop, rendered procedurally — no AI, no stock footage):
-
-![wallpaper](docs/screenshots/wallpaper.gif)
+The whole thing is plain Android APIs (Watch Next, `MediaCodec`, `WebView`), a small Python server and
+Home Assistant's REST API — nothing Shield- or Amazon-specific except the workarounds documented in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). If you try it on another box, an issue with the model
+and what happened is very welcome.
 
 ## Want one for your house? Ask an AI agent
 
@@ -87,7 +128,7 @@ Everything generated goes to `dist/` (git-ignored).
 
 ```bash
 # cards server (on the Docker host 192.168.2.46)
-scp cards/{app.py,ponte.html,Dockerfile,docker-compose.yml,wallpaper.jpg} h46:/dados/dockers/skippy-cards/
+scp cards/{app.py,quips.py,ponte.html,Dockerfile,docker-compose.yml,wallpaper.jpg} h46:/dados/dockers/skippy-cards/
 scp -r fonts h46:/dados/dockers/skippy-cards/
 ssh h46 'cd /dados/dockers/skippy-cards && docker compose up -d --build'
 # .env on the host only: PLEX_TOKEN, PLEX_MID, HASS_TOKEN, HASS_URL, PLEX_URL, PUBLIC_URL (see cards/.env.example)
@@ -98,12 +139,6 @@ adb -s 192.168.2.140:5555 install -r dist/skippy-channel.apk                    
 adb -s <device> shell dumpsys deviceidle whitelist +dev.skippy.channel                  # both: Doze would cut its network
 adb -s 192.168.2.140:5555 shell appops set dev.skippy.channel GET_USAGE_STATS allow      # Fire TV only (Watch)
 ```
-
-## Easter eggs
-
-Konami code on the Bridge panel or the Fire TV home, ◀◀◀ on the live camera, golden legendary lines,
-date jokes. Details (and how to trigger them without a remote) in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#easter-eggs).
-Skippy only talks on screen — never through speakers.
 
 ## Security notes
 
