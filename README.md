@@ -27,6 +27,19 @@ Animated wallpaper (24 s seamless loop, rendered procedurally — no AI, no stoc
 
 ![wallpaper](docs/screenshots/wallpaper.gif)
 
+## Want one for your house? Ask an AI agent
+
+This is a reference build for one specific house, not an installer. Give an AI coding agent with shell and
+`adb` access on your LAN (Claude Code, Codex, Cursor…) this repo and a prompt like:
+
+> Read https://github.com/cascodigital/skippy-tv, starting with `AGENTS.md`. Build the same kind of
+> home screen for my TV box (model: ___). My Home Assistant is at ___; I want these lights: ___ (this one
+> dims: ___). Camera via go2rtc at ___ (or none). Plex at ___ (or none). Docker host: ___. Ask me for
+> anything missing, never commit tokens, and show me a screenshot after every visual step.
+
+`AGENTS.md` tells the agent which path fits the device (Projectivy on Android TV 10+, custom launcher on
+Fire OS / older Android), what to change, in which order, and the traps we already measured.
+
 ## Pieces
 
 ```
