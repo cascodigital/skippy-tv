@@ -16,14 +16,13 @@ a live patio camera at ~1 s latency · house lights with dimmer · an AI with an
 
 ![Demo on the Fire TV](docs/screenshots/demo.gif)
 
-<sub>Real capture from the bedroom Fire TV Stick (1080p, sped-up cuts): home, cards, the Bridge with the live camera, and the Konami hyperspace jump.
-Full 50-second recording (MP4, 7 MB, opens in your player): <a href="https://github.com/cascodigital/skippy-tv/raw/main/docs/demo-firetv-1080p.mp4">download / play</a>.</sub>
+<sub>Real capture from the living-room NVIDIA Shield (1080p capture, cut short): home, cards, the Bridge with the live camera, and the Konami hyperspace jump.
+Full 43-second recording at 30 fps (MP4, 10 MB, opens in your player): <a href="https://github.com/cascodigital/skippy-tv/raw/main/docs/demo-shield-1080p.mp4">download / play</a>.</sub>
 
 </div>
 
 > **Built for 4K TVs.** The UI is laid out at 1080p and scaled by the box; the living-room Shield renders it at native 3840×2160
-> (its screenshot below is a 4K capture), the static wallpaper is rendered at 4K. The demo above is 1080p only because the
-> Fire TV Stick records at 1080p.
+> (its screenshot below is a 4K capture) and the static wallpaper is rendered at 4K. The demo is a 1080p screen capture to keep it light.
 
 > 🕹️ **There are secrets aboard.** Skippy hates it when monkeys find them.
 > Old-school gamers already know where to start: <kbd>↑</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>↓</kbd> … ([spoilers below](#easter-eggs))
