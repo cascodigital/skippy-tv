@@ -10,6 +10,7 @@
 @font-face { font-family: Raj; src: url(Rajdhani-Bold.ttf); font-weight: 700; }
 :root { --cyan: #5ce1ff; --cyan-d: rgba(92,225,255,.35); --navy: #050b14; --ink: #e6f8ff; --mute: #7d97b2; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: none; text-size-adjust: none; }   /* WebView da Amazon aumenta texto de bloco largo sozinho */
 html, body { width: 1920px; height: 1080px; overflow: hidden; background: transparent; color: var(--ink); font-family: Raj, sans-serif; }
 
 #stage { position: absolute; left: 0; top: 0; width: 1920px; transition: transform .45s cubic-bezier(.2,.8,.2,1); }
@@ -59,8 +60,8 @@ body.apps #stage { transform: translateY(-700px); }
 body.apps #hint { opacity: 0; }
 
 /* transmissão do Skippy na home */
-#tx { position: absolute; left: 96px; top: 210px; width: 1100px; font-family: Raj; font-weight: 600; font-size: 30px; color: #cfe8fb;
-      text-shadow: 0 2px 12px #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#tx { position: absolute; left: 96px; top: 196px; width: 1300px; font-family: Raj; font-weight: 600; font-size: 28px; line-height: 1.2; color: #cfe8fb;
+      text-shadow: 0 2px 12px #000; white-space: normal; word-wrap: break-word; max-height: 68px; overflow: hidden; }
 #tx b { font-family: Orb; font-weight: 500; font-size: 15px; letter-spacing: 4px; color: var(--cyan); margin-right: 14px; vertical-align: 4px; }
 #tx.alerta { color: #ffd2d6; } #tx.alerta b { color: #ff5560; } #tx.rara { color: #ffe6b0; } #tx.rara b { color: #ffc850; }
 #tx::after { content: '▌'; color: var(--cyan); animation: pisca .8s steps(2) infinite; }

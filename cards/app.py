@@ -188,6 +188,11 @@ def ctx():
     return _ctx['c']
 
 def quip(where):
+    try:   # teste de layout: echo "frase" > data/force_quip.txt (apagar depois)
+        t = open('/data/force_quip.txt').read().strip()
+        if t: return {'text': t, 'mood': 'normal', 'where': where}
+    except OSError:
+        pass
     c = ctx()
     if not c: return {'text': 'Sem contato com a casa. Ou ela me ignora, ou o Home Assistant caiu.', 'mood': 'alerta', 'where': where}
     return quips.pick(c, where)
@@ -215,15 +220,21 @@ def card_status():
     d.text((x, 270), f'{num(ur)}% UMID.', font=RAJ(34), fill=(215, 240, 255, 255))
     cond = COND.get(w['state'], w['state'].upper())
     d.text((x, 315), fit_text(d, cond, ORB(24), 360), font=ORB(24), fill=(235, 250, 255, 255))
-    # frase em até duas linhas
-    words, lines, cur = ('“' + q['text'] + '”').split(), [], ''
-    for w_ in words:
-        if d.textlength((cur + ' ' + w_).strip(), font=RAJ(30)) > 840 and cur: lines.append(cur); cur = w_
-        else: cur = (cur + ' ' + w_).strip()
-    lines.append(cur); lines = lines[:2]
+    # frase inteira em até duas linhas: encolhe a fonte antes de cortar
+    def wrap(f):
+        lines, cur = [], ''
+        for w_ in ('“' + q['text'] + '”').split():
+            if d.textlength((cur + ' ' + w_).strip(), font=f) > 850 and cur: lines.append(cur); cur = w_
+            else: cur = (cur + ' ' + w_).strip()
+        return lines + [cur]
+    for size in (30, 27, 24, 21):
+        qf = RAJ(size); lines = wrap(qf)
+        if len(lines) <= 2: break
+    if len(lines) > 2: lines = [lines[0], fit_text(d, ' '.join(lines[1:]), qf, 850)]
     tcol = (255, 205, 205, 245) if q['mood'] == 'alerta' else (255, 228, 170, 245) if q['mood'] == 'rara' else (200, 230, 255, 235)
+    lh = qf.size + 4
     for i, ln in enumerate(lines):
-        d.text((58, H - 128 + i * 34 + (34 if len(lines) == 1 else 0)), fit_text(d, ln, RAJ(30), 860), font=RAJ(30), fill=tcol)
+        d.text((58, H - 60 - lh * len(lines) + i * lh), ln, font=qf, fill=tcol)
     d.text((58, H - 50), 'SKIPPY  //  ELDER AI', font=ORB(16), fill=col + (170,))
     return im
 

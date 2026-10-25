@@ -13,6 +13,7 @@
   --red: #ff4b55;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: none; text-size-adjust: none; }   /* WebView da Amazon aumenta texto de bloco largo sozinho */
 html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--navy); color: var(--ink); font-family: Raj, sans-serif; }
 
 /* fundo: wallpaper com deriva lenta + véu navy + scanlines */
@@ -116,10 +117,10 @@ body.native.full #bg, body.native.full #veil, body.native.full #scan { display: 
 
 
 /* transmissão do Skippy (frase viva) */
-#tx { position: absolute; left: 72px; top: 868px; width: 1180px; height: 96px; padding: 16px 30px 0 30px; }
+#tx { position: absolute; left: 72px; top: 852px; width: 1180px; min-height: 96px; padding: 16px 30px 16px 30px; }
 #tx .lbl { font-family: Orb; font-size: 15px; letter-spacing: 4px; color: var(--cyan); opacity: .85; }
 #tx .lbl i { display: inline-block; width: 8px; height: 8px; margin-right: 10px; background: var(--cyan); vertical-align: 1px; animation: blink 1s steps(2) infinite; }
-#tx .txt { margin-top: 6px; font-size: 30px; font-weight: 600; color: #d8efff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#tx .txt { margin-top: 6px; font-size: 28px; line-height: 1.2; font-weight: 600; color: #d8efff; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
 #tx .txt::after { content: '▌'; color: var(--cyan); animation: blink .8s steps(2) infinite; }
 #tx.alerta { --c: #ff4b55; } #tx.rara { --c: #ffc850; }
 #tx.alerta .lbl, #tx.rara .lbl { color: var(--c); } #tx.alerta .lbl i, #tx.rara .lbl i { background: var(--c); }
@@ -387,6 +388,7 @@ await load(); setInterval(load, 2500);
 // gatilho de teste dos easter eggs sem controle remoto: /ponte?egg=elder | ?egg=mira
 if (params.get('egg') === 'elder') setTimeout(elder, 300);
 if (params.get('egg') === 'mira') setTimeout(mira, 300);
+if (params.get('say')) setTimeout(() => { idleMode = true; lastQuip = ''; say(params.get('say')); }, 300);   // teste de layout
 </script>
 </body>
 </html>
