@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, initial-scale=1">
+<title>Ponte de Comando</title>
+<style>
+@font-face { font-family: Orb; src: url(/static/Orbitron.ttf); }
+@font-face { font-family: Raj; src: url(/static/Rajdhani-SemiBold.ttf); font-weight: 600; }
+@font-face { font-family: Raj; src: url(/static/Rajdhani-Bold.ttf); font-weight: 700; }
+:root {
+  --cyan: #5ce1ff; --cyan-d: rgba(92,225,255,.35); --navy: #050b14; --ink: #e6f8ff; --mute: #6f8aa6;
+  --red: #ff4b55;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--navy); color: var(--ink); font-family: Raj, sans-serif; }
+
+/* fundo: wallpaper com deriva lenta + véu navy + scanlines */
+#bg { position: fixed; inset: -60px; background: url(/static/wallpaper.jpg) 60% 45%/150% auto; filter: saturate(1.1) brightness(.55);
+      animation: drift 60s ease-in-out infinite alternate; }
+@keyframes drift { from { transform: translate(0,0) scale(1.04); } to { transform: translate(-40px,-20px) scale(1.08); } }
+#veil { position: fixed; inset: 0; background: radial-gradient(ellipse at 30% 40%, rgba(5,11,20,.25), rgba(5,11,20,.85) 75%); }
+#scan { position: fixed; inset: 0; pointer-events: none; opacity: .18;
+        background: repeating-linear-gradient(0deg, rgba(0,0,0,.6) 0 1px, transparent 1px 4px); }
+#sweep { position: fixed; left: 0; right: 0; height: 140px; pointer-events: none;
+         background: linear-gradient(180deg, transparent, rgba(92,225,255,.05), transparent); animation: sweep 9s linear infinite; }
+@keyframes sweep { from { top: -140px; } to { top: 1080px; } }
+
+/* cabeçalho */
+header { position: absolute; left: 72px; right: 72px; top: 44px; display: flex; justify-content: space-between; align-items: flex-end; }
+.brand { font-family: Orb; letter-spacing: 4px; }
+.brand b { display: block; font-size: 30px; color: var(--cyan); text-shadow: 0 0 18px var(--cyan-d); font-weight: 600; }
+.brand span { display: block; font-family: Raj; font-size: 22px; color: var(--mute); letter-spacing: 3px; margin-top: 4px; }
+.clock { text-align: right; font-family: Orb; }
+.clock b { display: block; font-size: 54px; font-weight: 500; text-shadow: 0 0 22px var(--cyan-d); }
+.clock span { font-family: Raj; font-size: 22px; color: var(--mute); letter-spacing: 2px; }
+
+/* painel HUD genérico: canto cortado + traços */
+.hud { position: absolute; background: linear-gradient(160deg, rgba(14,30,52,.78), rgba(4,9,18,.86));
+       clip-path: polygon(34px 0, 100% 0, 100% calc(100% - 34px), calc(100% - 34px) 100%, 0 100%, 0 34px);
+       transition: transform .25s ease, box-shadow .25s ease; }
+.hud::before { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 5;
+       clip-path: inherit; border: 2px solid rgba(92,225,255,.35); }
+.hud::after { content: ''; position: absolute; left: 46px; top: 9px; width: 150px; height: 4px; background: var(--cyan);
+       box-shadow: 0 0 12px var(--cyan); z-index: 6; }
+.hud.focus { transform: scale(1.025); }
+.hud.focus::before { border-color: var(--cyan); box-shadow: inset 0 0 40px rgba(92,225,255,.45); }
+.chip { position: absolute; left: 26px; top: 26px; z-index: 7; font-family: Orb; font-size: 19px; letter-spacing: 2px;
+        padding: 8px 26px 8px 16px; background: rgba(5,11,20,.82); border: 1px solid var(--cyan-d);
+        clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%); }
+.chip i { display: inline-block; width: 10px; height: 10px; background: var(--cyan); margin-right: 10px; vertical-align: 1px; }
+.chip.live i { background: var(--red); border-radius: 50%; box-shadow: 0 0 10px var(--red); animation: blink 1.2s steps(2) infinite; }
+@keyframes blink { 50% { opacity: .25; } }
+
+/* câmera */
+#cam { left: 72px; top: 170px; width: 1180px; height: 664px; }
+#cam video-stream, #cam video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; }
+#cam .info { display: none; }
+#cam .meta { position: absolute; left: 30px; bottom: 26px; z-index: 7; font-family: Orb; font-size: 20px; letter-spacing: 2px; color: var(--cyan);
+             text-shadow: 0 0 10px #000; }
+#cam .shade { position: absolute; inset: 0; z-index: 4; pointer-events: none;
+              background: linear-gradient(180deg, rgba(5,11,20,.35), transparent 22%, transparent 70%, rgba(5,11,20,.75)); }
+#cam .wait { position: absolute; inset: 0; display: grid; place-items: center; font-family: Orb; letter-spacing: 4px; color: var(--mute); z-index: 3; }
+body.full #cam { left: 0; top: 0; width: 1920px; height: 1080px; transform: none; clip-path: none; z-index: 50; }
+body.full #cam::before, body.full #cam::after { display: none; }
+#cam { transition: all .35s cubic-bezier(.2,.8,.2,1); }
+
+/* luzes */
+#lights { position: absolute; left: 1290px; top: 170px; width: 558px; }
+.light { position: relative; height: 148px; margin-bottom: 24px; width: 558px; }
+.light .ico { position: absolute; left: 40px; top: 38px; width: 72px; height: 72px; }
+.light .ico svg { width: 72px; height: 72px; stroke: var(--mute); fill: none; stroke-width: 3.2; transition: all .3s; }
+.light.on .ico svg { stroke: var(--cyan); filter: drop-shadow(0 0 10px var(--cyan)); }
+.light.on .ico .rays { opacity: 1; }
+.light .ico .rays { opacity: 0; transition: opacity .3s; }
+.light .name { position: absolute; left: 140px; top: 34px; font-family: Orb; font-size: 30px; letter-spacing: 3px; font-weight: 600; }
+.light .st { position: absolute; left: 140px; top: 80px; font-size: 28px; font-weight: 700; letter-spacing: 2px; color: var(--mute); }
+.light.on .st { color: var(--cyan); text-shadow: 0 0 12px var(--cyan-d); }
+.light.on { background: linear-gradient(160deg, rgba(20,60,90,.85), rgba(4,14,26,.9)); }
+.light .glow { position: absolute; left: 10px; top: 10px; width: 130px; height: 130px; border-radius: 50%; background: radial-gradient(circle, rgba(92,225,255,.45), transparent 65%);
+               opacity: 0; transition: opacity .4s; }
+.light.on .glow { opacity: 1; }
+.light .bar { position: absolute; left: 140px; right: 40px; bottom: 26px; height: 8px; background: rgba(255,255,255,.12); border-radius: 4px; display: none; }
+.light.dim .bar { display: block; }
+.light .bar b { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--cyan); border-radius: 4px; box-shadow: 0 0 12px var(--cyan); transition: width .2s; }
+.light .arrows { position: absolute; right: 40px; top: 40px; font-family: Orb; font-size: 22px; color: var(--mute); display: none; }
+.light.dim.focus .arrows { display: block; color: var(--cyan); }
+.light.dim .st { top: 76px; }
+.light.err .st { color: var(--red); }
+.light.busy .st::after { content: ' ···'; animation: blink .6s steps(2) infinite; }
+
+/* dimmer da sala: elemento próprio, só ele responde a ◀ ▶ */
+.slider { position: relative; height: 92px; margin: -12px 0 24px; width: 558px; }
+.slider .lbl { position: absolute; left: 40px; top: 20px; font-family: Orb; font-size: 19px; letter-spacing: 3px; color: var(--mute); }
+.slider .val { position: absolute; right: 40px; top: 16px; font-family: Raj; font-weight: 700; font-size: 28px; color: var(--cyan); }
+.slider .track { position: absolute; left: 40px; right: 40px; top: 58px; height: 10px; border-radius: 5px; background: rgba(255,255,255,.12); }
+.slider .track b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; background: var(--cyan); box-shadow: 0 0 14px var(--cyan); transition: width .2s; }
+.slider .track i { position: absolute; top: -9px; width: 28px; height: 28px; margin-left: -14px; border-radius: 50%; background: var(--ink);
+                   box-shadow: 0 0 16px var(--cyan); transition: left .2s; }
+.slider.focus .lbl { color: var(--cyan); }
+.slider.focus .lbl::after { content: '   ◀ ▶'; }
+.slider.off { opacity: .55; }
+.slider::after { display: none; }
+
+
+/* modo nativo (app do Shield): o vídeo é uma SurfaceView POR BAIXO da página; a página abre um buraco
+   com o mesmo recorte do painel e corta tudo que é caro (deriva do fundo, varredura) */
+body.native, html.native { background: transparent; }
+body.native #bg, body.native #veil {
+  clip-path: polygon(evenodd, 0 0, 1920px 0, 1920px 1080px, 0 1080px, 0 0,
+    106px 170px, 1252px 170px, 1252px 800px, 1218px 834px, 72px 834px, 72px 204px, 106px 170px); }
+body.native #bg { animation: none; inset: 0; }
+body.native #sweep { display: none; }
+body.native #cam { background: transparent; transition: none; }
+body.native.full #bg, body.native.full #veil, body.native.full #scan { display: none; }
+
+/* rodapé */
+footer { position: absolute; left: 72px; right: 72px; bottom: 52px; display: flex; justify-content: space-between; font-family: Orb; font-size: 19px;
+         letter-spacing: 2px; color: var(--mute); }
+footer kbd { font-family: Orb; color: var(--cyan); border: 1px solid var(--cyan-d); padding: 2px 10px; margin-right: 8px; }
+#quip { font-family: Raj; font-size: 26px; letter-spacing: 0; color: #b8d6ee; font-style: italic; }
+body.full header, body.full #lights, body.full footer { opacity: 0; }
+body.full #cammeta::before { content: 'VOLTAR · SAIR DA TELA CHEIA'; }
+body.full #cammeta span { display: none; }
+header, #lights, footer { transition: opacity .3s; }
+</style>
+</head>
+<body>
+<div id="bg"></div><div id="veil"></div>
+
+<header>
+  <div class="brand"><b>SKIPPY // PONTE DE COMANDO</b><span id="node">BRIDGE 01 · SALA · NODE 192.168.2.111</span></div>
+  <div class="clock"><b id="hh">--:--</b><span id="dd"></span></div>
+</header>
+
+<div id="cam" class="hud" data-k="cam">
+  <div class="chip live"><i></i>AO VIVO // RUA</div>
+  <div class="wait">CONECTANDO À CÂMERA…</div>
+  <div class="shade"></div>
+  <div class="meta" id="cammeta"><span>OK · TELA CHEIA</span></div>
+</div>
+
+<div id="lights"></div>
+
+<footer>
+  <div><kbd>▲▼◀▶</kbd>NAVEGAR &nbsp; <kbd>OK</kbd>LIGA / DESLIGA &nbsp; <kbd>◀▶</kbd>DIMMER DA SALA &nbsp; <kbd>VOLTAR</kbd>SAIR</div>
+  <div id="quip"></div>
+</footer>
+<div id="scan"></div><div id="sweep"></div>
+
+<script type="module">
+const GO2RTC = 'http://192.168.2.102:1984';
+if (new URLSearchParams(location.search).get('node') === 'quarto') document.getElementById('node').textContent = 'BRIDGE 02 · QUARTO · NODE 192.168.2.140';
+const SVG = `<svg viewBox="0 0 72 72"><g class="rays"><path d="M36 4v8M10 14l6 6M62 14l-6 6M4 38h8M60 38h8"/></g>
+  <path d="M24 46c-4-4-7-8-7-15a19 19 0 0 1 38 0c0 7-3 11-7 15-2 2-3 4-3 7H27c0-3-1-5-3-7z"/><path d="M28 60h16M30 66h12"/></svg>`;
+const QUIPS = ['Tudo sob controle. O meu, não o teu.', 'Luzes, câmera e um macaco no sofá.', 'A rua está calma. Por enquanto.',
+               'Ponte operacional. Piloto: questionável.', 'Monitorando o perímetro com tédio cósmico.'];
+document.getElementById('quip').textContent = '“' + QUIPS[Math.floor(Date.now() / 1800000) % QUIPS.length] + '”';
+
+// relógio
+const tick = () => { const d = new Date();
+  hh.textContent = d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+  dd.textContent = d.toLocaleDateString('pt-BR', {weekday: 'long', day: '2-digit', month: 'long'}).toUpperCase(); };
+tick(); setInterval(tick, 5000);
+
+// câmera ao vivo
+const NATIVE = new URLSearchParams(location.search).has('native') && window.Skippy;
+const waitEl = document.querySelector('#cam .wait');
+function placeVideo() {
+  if (!NATIVE) return;
+  const r = document.getElementById('cam').getBoundingClientRect();
+  const full = document.body.classList.contains('full');
+  if (full) Skippy.video(0, 0, 1, 1);
+  else Skippy.video(r.left / innerWidth, r.top / innerHeight, r.width / innerWidth, r.height / innerHeight);
+}
+window.camReady = () => { waitEl.style.display = 'none'; };
+window.camLost = () => { waitEl.style.display = ''; waitEl.textContent = 'RECONECTANDO À CÂMERA…'; };
+if (NATIVE) {
+  document.documentElement.classList.add('native'); document.body.classList.add('native');
+  new MutationObserver(placeVideo).observe(document.body, {attributes: true, attributeFilter: ['class']});
+  addEventListener('resize', placeVideo); setTimeout(placeVideo, 50); setTimeout(placeVideo, 800);
+  setInterval(() => { if (Skippy.playing()) camReady(); }, 700);
+}
+function iframeCam() {
+  // player do go2rtc em iframe (o ws do go2rtc só aceita a própria origem)
+  const f = document.createElement('iframe');
+  f.src = GO2RTC + '/stream.html?src=rua&mode=webrtc';
+  f.allow = 'autoplay'; f.tabIndex = -1;
+  f.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;background:#000;pointer-events:none';
+  f.onload = () => setTimeout(camReady, 1500);
+  document.getElementById('cam').prepend(f);
+}
+if (!NATIVE) iframeCam();
+window.camFallback = () => {
+  document.documentElement.classList.remove('native'); document.body.classList.remove('native');
+  Skippy.video(0, 0, 0, 0); waitEl.textContent = 'CONECTANDO À CÂMERA…'; iframeCam();
+};
+
+// luzes
+let L = [];
+const box = document.getElementById('lights');
+function draw() {
+  box.innerHTML = '';
+  L.forEach(l => {
+    const el = document.createElement('div');
+    el.className = 'hud light' + (l.on ? ' on' : '') + (l.dim ? ' dim' : '') + (l.ok ? '' : ' err');
+    el.dataset.k = l.id;
+    el.innerHTML = `<div class="glow"></div><div class="ico">${SVG}</div><div class="name">${l.name.toUpperCase()}</div>
+      <div class="st">${!l.ok ? 'SEM SINAL' : l.on ? 'LIGADA' : 'DESLIGADA'}</div>
+`;
+    box.appendChild(el);
+    if (l.dim) {
+      const s = document.createElement('div'), v = l.on ? l.bri : 0;
+      s.className = 'hud slider' + (l.on ? '' : ' off'); s.dataset.k = l.id + ':dim';
+      s.innerHTML = `<div class="lbl">BRILHO DA ${l.name.toUpperCase()}</div><div class="val">${v}%</div>
+        <div class="track"><b style="width:${v}%"></b><i style="left:${v}%"></i></div>`;
+      box.appendChild(s);
+    }
+  });
+  focusOn(cur);
+}
+let sig = '';
+async function load() { try { const r = await fetch('/api/lights', {cache: 'no-store'}); const t = await r.text();
+  if (!pending && t !== sig) { sig = t; L = JSON.parse(t); draw(); } } catch (e) {} }
+let pending = 0;
+async function act(id, action, value) {
+  pending++;
+  const el = document.querySelector(`[data-k="${id}"]`); el && el.classList.add('busy');
+  try {
+    const r = await fetch('/api/light', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id, action, value})});
+    if (r.ok) { pending--; const t = await r.text(); sig = t; L = JSON.parse(t); draw(); return; }
+  } catch (e) {}
+  pending--; load();
+}
+
+// foco e D-pad
+const params = new URLSearchParams(location.search);
+let cur = params.get('focus') === 'camera' ? 'cam' : 'sala';
+function stops() { const r = []; L.forEach(l => { r.push(l.id); if (l.dim) r.push(l.id + ':dim'); }); return r; }
+function focusOn(k) { cur = k; document.querySelectorAll('.focus').forEach(e => e.classList.remove('focus'));
+  const el = document.querySelector(`[data-k="${k}"]`); el && el.classList.add('focus'); }
+let dimT = null, dimV = null;
+function dim(delta) {
+  const id = cur.split(':')[0], l = L.find(x => x.id === id); if (!l) return;
+  dimV = Math.max(1, Math.min(100, (dimV ?? (l.on ? l.bri : 0)) + delta));
+  l.on = true; l.bri = dimV; draw();
+  clearTimeout(dimT); dimT = setTimeout(() => { act(l.id, 'set', dimV); dimV = null; }, 450);
+}
+document.addEventListener('keydown', ev => {
+  const k = ev.key, ids = stops(), onSlider = cur.endsWith(':dim');
+  if (document.body.classList.contains('full')) {
+    if (['Enter', 'Escape', 'Backspace', 'GoBack', 'BrowserBack'].includes(k)) { document.body.classList.remove('full'); ev.preventDefault(); }
+    return;
+  }
+  if (cur === 'cam') {
+    if (k === 'ArrowRight') focusOn(ids[0]);
+    else if (k === 'Enter') document.body.classList.add('full');
+    else return;
+  } else if (k === 'ArrowDown') { focusOn(ids[Math.min(ids.length - 1, ids.indexOf(cur) + 1)]); }
+  else if (k === 'ArrowUp') { focusOn(ids[Math.max(0, ids.indexOf(cur) - 1)]); }
+  else if (onSlider && k === 'ArrowRight') dim(+10);
+  else if (onSlider && k === 'ArrowLeft') dim(-10);
+  else if (k === 'ArrowLeft') focusOn('cam');
+  else if (k === 'Enter' && !onSlider) act(cur, 'toggle');
+  else return;
+  ev.preventDefault();
+});
+// do card da câmera: já entra em tela cheia
+if (params.get('focus') === 'camera') setTimeout(() => document.body.classList.add('full'), 400);
+window.skippyBack = () => { if (document.body.classList.contains('full') && params.get('focus') !== 'camera') { document.body.classList.remove('full'); return true; } return false; };
+await load(); setInterval(load, 2500);
+</script>
+</body>
+</html>

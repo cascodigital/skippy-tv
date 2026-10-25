@@ -1,0 +1,38 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.skippy.channel" android:versionCode="VC" android:versionName="1.VC">
+  <uses-sdk android:minSdkVersion="25" android:targetSdkVersion="30"/>
+  <uses-permission android:name="android.permission.INTERNET"/>
+  <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"/>
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+  <uses-permission android:name="com.android.providers.tv.permission.WRITE_EPG_DATA"/>
+  <uses-feature android:name="android.software.leanback" android:required="false"/>
+  <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
+  <application android:label="Skippy" android:icon="@drawable/banner" android:banner="@drawable/banner" android:usesCleartextTraffic="true">
+    <activity android:name=".Main" android:exported="true" android:theme="@android:style/Theme.Translucent.NoTitleBar">
+      <intent-filter><action android:name="android.intent.action.MAIN"/></intent-filter>
+    </activity>
+    <activity android:name=".Ponte" android:exported="true" android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
+              android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize" android:hardwareAccelerated="true"/>
+    <activity android:name=".Home" android:exported="true" android:launchMode="singleTask" android:excludeFromRecents="true"
+              android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" android:stateNotNeeded="true"
+              android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize">
+      <intent-filter><action android:name="android.intent.action.MAIN"/></intent-filter>
+    </activity>
+    <!-- ícone "Skippy" na fileira da Amazon (plano B pros 5 s do vigia). Desligado por padrão: no Shield não aparece;
+         o próprio app liga no Fire TV (o ADB é barrado de mudar componente lá). -->
+    <activity-alias android:name=".FireIcon" android:targetActivity=".Home" android:enabled="false" android:exported="true"
+                    android:label="Skippy" android:banner="@drawable/banner" android:icon="@drawable/banner">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN"/>
+        <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
+      </intent-filter>
+    </activity-alias>
+    <service android:name=".Watch" android:exported="false"/>
+    <receiver android:name=".Sync" android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED"/>
+        <action android:name="android.media.tv.action.INITIALIZE_PROGRAMS"/>
+        <action android:name="dev.skippy.channel.SYNC"/>
+      </intent-filter>
+    </receiver>
+  </application>
+</manifest>

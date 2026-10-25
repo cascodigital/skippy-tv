@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, initial-scale=1">
+<title>Skippy Home</title>
+<style>
+@font-face { font-family: Orb; src: url(Orbitron.ttf); }
+@font-face { font-family: Raj; src: url(Rajdhani-SemiBold.ttf); font-weight: 600; }
+@font-face { font-family: Raj; src: url(Rajdhani-Bold.ttf); font-weight: 700; }
+:root { --cyan: #5ce1ff; --cyan-d: rgba(92,225,255,.35); --navy: #050b14; --ink: #e6f8ff; --mute: #7d97b2; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: transparent; color: var(--ink); font-family: Raj, sans-serif; }
+
+#stage { position: absolute; left: 0; top: 0; width: 1920px; transition: transform .45s cubic-bezier(.2,.8,.2,1); }
+body.apps #stage { transform: translateY(-700px); }
+
+/* relógio */
+#clock { position: absolute; right: 96px; top: 58px; text-align: right; font-family: Orb; }
+#clock b { display: block; font-size: 64px; font-weight: 500; text-shadow: 0 0 24px var(--cyan-d); }
+#clock span { font-family: Raj; font-size: 24px; color: var(--mute); letter-spacing: 2px; }
+#net { margin-top: 6px; font-family: Orb; font-size: 15px; letter-spacing: 3px; color: var(--mute); }
+#net.ok::before { content: '● '; color: var(--cyan); }
+#net.off::before { content: '● '; color: #ff5060; }
+
+/* fileira de cards */
+#cards { position: absolute; left: 96px; top: 300px; height: 330px; width: 1728px; overflow: visible; }
+#cards .track { position: absolute; left: 0; top: 0; display: flex; gap: 30px; transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+.card { position: relative; width: 512px; height: 288px; flex: none; border-radius: 18px; overflow: hidden; background: #0a1626 center/cover;
+        box-shadow: 0 10px 30px rgba(0,0,0,.45); transition: transform .25s ease, box-shadow .25s ease; opacity: .92; }
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.focus.card { transform: scale(1.08); opacity: 1; box-shadow: 0 0 0 3px var(--cyan), 0 0 38px rgba(92,225,255,.55), 0 14px 40px rgba(0,0,0,.6); z-index: 2; }
+#cardinfo { position: absolute; left: 96px; top: 652px; height: 80px; }
+#cardinfo b { display: block; font-size: 40px; font-weight: 700; letter-spacing: .5px; text-shadow: 0 2px 12px #000; }
+#cardinfo span { font-size: 26px; color: #b9d3ea; text-shadow: 0 2px 10px #000; }
+#cards .empty { font-family: Orb; font-size: 20px; letter-spacing: 3px; color: var(--mute); padding: 120px 0 0 20px; }
+
+/* dock */
+#dock { position: absolute; left: 96px; right: 96px; top: 800px; height: 167px; border-radius: 34px;
+        background: rgba(9,22,44,.58); border: 1px solid rgba(92,225,255,.18); box-shadow: inset 0 0 40px rgba(92,225,255,.06); }
+#dock .row { position: absolute; left: 0; right: 0; top: 30px; display: flex; gap: 20px; justify-content: center; }
+.app { position: relative; width: 190px; height: 107px; flex: none; border-radius: 14px; overflow: hidden; transition: transform .22s ease, box-shadow .22s ease; }
+.app img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.focus.app { transform: scale(1.12); box-shadow: 0 0 0 3px var(--cyan), 0 0 32px rgba(92,225,255,.6); z-index: 2; }
+
+/* todos os apps */
+#allwrap { position: absolute; left: 96px; top: 1130px; width: 1728px; }
+#allwrap h2 { font-family: Orb; font-size: 22px; letter-spacing: 4px; color: var(--cyan); font-weight: 500; margin-bottom: 28px; }
+#all { display: flex; flex-wrap: wrap; gap: 26px 22px; }
+.tile { position: relative; width: 240px; height: 135px; border-radius: 14px; overflow: hidden; transition: transform .22s ease, box-shadow .22s ease;
+        background: linear-gradient(160deg, rgba(14,30,52,.9), rgba(4,9,18,.92)); border: 1px solid rgba(92,225,255,.25); }
+.tile img.ban { width: 100%; height: 100%; object-fit: cover; }
+.tile img.ico { position: absolute; left: 50%; top: 18px; width: 64px; height: 64px; margin-left: -32px; }
+.tile span { position: absolute; left: 8px; right: 8px; bottom: 12px; text-align: center; font-family: Orb; font-size: 14px; letter-spacing: 1px;
+             color: var(--cyan); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.focus.tile { transform: scale(1.12); box-shadow: 0 0 0 3px var(--cyan), 0 0 32px rgba(92,225,255,.6); z-index: 2; }
+
+#hint { position: absolute; left: 0; right: 0; top: 1000px; text-align: center; font-family: Orb; font-size: 15px; letter-spacing: 4px; color: var(--mute); opacity: .8; }
+body.apps #hint { opacity: 0; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="clock"><b id="hh">--:--</b><span id="dd"></span><div id="net">CONECTANDO…</div></div>
+  <div id="cards"><div class="track"></div></div>
+  <div id="cardinfo"><b></b><span></span></div>
+  <div id="dock"><div class="row"></div></div>
+  <div id="hint">▼  TODOS OS APPS</div>
+  <div id="allwrap"><h2>TODOS OS APPS</h2><div id="all"></div></div>
+</div>
+
+<script>
+const FEED = 'http://192.168.2.46:8099/feed.json';
+// dock fixo: banner do tema + o que abre (pacote, pacote/activity ou ação interna)
+const DOCK = [
+  {b: 'plex', go: 'com.plexapp.android'},
+  {b: 'youtube', go: 'com.amazon.firetv.youtube'},
+  {b: 'netflix', go: 'com.netflix.ninja'},
+  {b: 'globoplay', go: 'com.globo.globotv'},
+  {b: 'max', go: 'com.hbo.hbonow'},
+  {b: 'appletv', go: 'com.apple.atve.amazon.appletv'},
+  {b: 'ponte', go: '@ponte'},
+  {b: 'settings', go: 'com.amazon.tv.launcher/.ui.SettingsActivity'},
+];
+// apps fora do dock que ganham o banner do tema
+const THEMED = {'org.videolan.vlc': 'vlc', 'com.amazon.venezia': 'apps'};
+const HIDE = new Set(['com.amazon.tv.launcher', 'com.amazon.firebat', 'com.amazon.ssm', 'com.amazon.vizzini.ftvcds',
+  'com.amazon.minitv.android.app', 'com.amazon.imdb.tv.android.app', 'com.amazon.hedwig', 'com.amazon.tahoe',
+  'com.amazon.ftv.profilepicker', 'com.android.documentsui', 'com.android.providers.downloads.ui']);
+
+// relógio
+const tick = () => { const d = new Date();
+  hh.textContent = d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+  dd.textContent = d.toLocaleDateString('pt-BR', {weekday: 'long', day: '2-digit', month: 'long'}).toUpperCase(); };
+tick(); setInterval(tick, 5000);
+
+// estado de foco: row 0 = cards, 1 = dock, 2 = todos os apps
+let row = 1, idx = [0, 0, 0], CARDS = [], ALL = [], loaded = false;
+const COLS = 7;
+
+function render() {
+  const t = document.querySelector('#cards .track');
+  t.innerHTML = CARDS.length ? '' : `<div class="empty">${loaded ? 'SEM SINAL DO SKIPPY-CARDS (.46)' : 'CARREGANDO…'}</div>`;
+  CARDS.forEach((c, i) => { const e = document.createElement('div'); e.className = 'card'; e.dataset.r = 0; e.dataset.i = i;
+    e.innerHTML = `<img src="${c.img}">`; t.appendChild(e); });
+  const d = document.querySelector('#dock .row'); d.innerHTML = '';
+  DOCK.forEach((a, i) => { const e = document.createElement('div'); e.className = 'app'; e.dataset.r = 1; e.dataset.i = i;
+    e.innerHTML = `<img src="banners/banner-${a.b}.png">`; d.appendChild(e); });
+  const g = document.getElementById('all'); g.innerHTML = '';
+  ALL.forEach((a, i) => { const e = document.createElement('div'); e.className = 'tile'; e.dataset.r = 2; e.dataset.i = i;
+    e.innerHTML = THEMED[a.pkg] ? `<img class="ban" src="banners/banner-${THEMED[a.pkg]}.png">` : a.banner ? `<img class="ban" src="${a.img}">` : `<img class="ico" src="${a.img}"><span>${a.label.toUpperCase()}</span>`;
+    g.appendChild(e); });
+  focus();
+}
+
+function count(r) { return r === 0 ? CARDS.length : r === 1 ? DOCK.length : ALL.length; }
+function focus() {
+  document.querySelectorAll('.focus').forEach(e => e.classList.remove('focus'));
+  if (row === 0 && !CARDS.length) row = 1;
+  idx[row] = Math.max(0, Math.min(count(row) - 1, idx[row]));
+  const el = document.querySelector(`[data-r="${row}"][data-i="${idx[row]}"]`);
+  if (el) el.classList.add('focus');
+  document.body.classList.toggle('apps', row === 2);
+  // rolagem da fileira de cards: mantém o focado visível
+  const t = document.querySelector('#cards .track');
+  const off = Math.max(0, Math.min(idx[0] * 542 - 542, Math.max(0, CARDS.length * 542 - 1728)));
+  t.style.transform = `translateX(${-off}px)`;
+  const c = CARDS[idx[0]];
+  cardinfo.style.opacity = row === 0 && c ? 1 : 0;
+  if (c) { cardinfo.querySelector('b').textContent = c.title; cardinfo.querySelector('span').textContent = c.desc || ''; }
+}
+
+function activate() {
+  if (row === 0) { const c = CARDS[idx[0]]; if (c && c.intent) Launcher.open(c.intent); }
+  else if (row === 1) { const a = DOCK[idx[1]];
+    if (a.go === '@ponte') Launcher.open('intent:#Intent;component=dev.skippy.channel/.Ponte;end'); else Launcher.launch(a.go); }
+  else { const a = ALL[idx[2]]; if (a) Launcher.launch(a.spec); }
+}
+
+document.addEventListener('keydown', ev => {
+  const k = ev.key;
+  if (k === 'ArrowRight') idx[row]++;
+  else if (k === 'ArrowLeft') idx[row]--;
+  else if (k === 'ArrowDown') { if (row === 2) idx[2] += COLS; else row++; }
+  else if (k === 'ArrowUp') { if (row === 2 && idx[2] >= COLS) idx[2] -= COLS; else if (row > 0) row--; }
+  else if (k === 'Enter') { activate(); ev.preventDefault(); return; }
+  else return;
+  if (row === 2 && !ALL.length) row = 1;
+  focus(); ev.preventDefault();
+});
+window.onBack = () => { if (row !== 1) { row = 1; focus(); } return true; };
+window.onHomePressed = () => { row = 1; idx[1] = 0; focus(); };
+window.onHome = () => loadFeed();
+
+async function loadFeed() {
+  try {
+    const r = await fetch(FEED, {cache: 'no-store'}); const j = await r.json();
+    const keep = row === 0 && CARDS[idx[0]] ? CARDS[idx[0]].id : null;
+    CARDS = j.cards || [];
+    if (keep) { const n = CARDS.findIndex(c => c.id === keep); if (n >= 0) idx[0] = n; }
+    net.className = 'ok'; net.textContent = 'SKIPPY ONLINE';
+  } catch (e) { net.className = 'off'; net.textContent = 'SKIPPY OFFLINE'; }
+  loaded = true; render();
+}
+
+try {
+  const fav = new Set(DOCK.map(a => a.go.split('/')[0]));
+  ALL = JSON.parse(Launcher.apps()).filter(a => !HIDE.has(a.pkg) && !fav.has(a.pkg))
+    .sort((a, b) => (b.tv - a.tv) || a.label.localeCompare(b.label, 'pt-BR'));
+  ALL.push({pkg: 'amazon', spec: 'com.amazon.tv.launcher/.ui.HomeActivity_vNext', label: 'Tela da Amazon', banner: false,
+            img: 'banners/banner-apps.png'});
+} catch (e) { console.log('apps ' + e); }
+render();
+loadFeed(); setInterval(loadFeed, 5 * 60 * 1000);
+</script>
+</body>
+</html>

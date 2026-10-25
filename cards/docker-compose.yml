@@ -1,0 +1,13 @@
+services:
+  skippy-cards:
+    build: .
+    image: skippy-cards:local
+    container_name: skippy-cards
+    restart: unless-stopped
+    ports:
+      - "8099:8099"
+    env_file: .env
+    volumes:
+      - ./data:/data
+    labels:
+      - "description=Cards HUD do canal Skippy no Shield (Plex + HASS) - feed /feed.json"
