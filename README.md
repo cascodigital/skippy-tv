@@ -25,6 +25,9 @@ Full 50-second recording: <a href="docs/demo-firetv-1080p.mp4">docs/demo-firetv-
 > (its screenshot below is a 4K capture), the static wallpaper is rendered at 4K. The demo above is 1080p only because the
 > Fire TV Stick records at 1080p.
 
+> 🕹️ **There are secrets aboard.** Skippy hates it when monkeys find them.
+> Old-school gamers already know where to start: <kbd>↑</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>↓</kbd> … ([spoilers below](#easter-eggs))
+
 ## What it looks like
 
 ![NVIDIA Shield home, 4K](docs/screenshots/shield-home.jpg)
@@ -56,11 +59,33 @@ so Skippy keeps score instead — *"Last hour: palm tree 28, burglars 0."* (Line
 
 ### Easter eggs
 
-| Konami code on the Bridge → *Protocolo Elder* | ◀◀◀ on the camera → *Modo Mira* | Konami on the Fire TV home → hyperspace |
+| Konami code on the Bridge → *Protocolo Elder* | ◀◀◀ on the camera → *Modo Mira* | Konami on the home → hyperspace |
 |---|---|---|
 | ![Protocolo Elder](docs/screenshots/egg-elder.jpg) | ![Modo Mira](docs/screenshots/egg-mira.jpg) | ![Hyperspace](docs/screenshots/egg-hyperspace.jpg) |
 
 None of them touch the house: the planetary takeover is cancelled because *"the neighbour's Wi-Fi is too slow"*.
+
+<details>
+<summary>🎮 <b>Cheat sheet</b> — click only if you give up (Skippy will judge you)</summary>
+
+<br>
+
+The **Konami code** is the most famous cheat in gaming history (Gradius, Contra, 1985). On a TV remote there is no
+<kbd>B</kbd> <kbd>A</kbd>, so here it is just the arrows, pressed one right after the other — no OK at the end:
+
+<p align="center"><kbd>↑</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> <kbd>←</kbd> <kbd>→</kbd></p>
+
+| Where | What to press | What happens |
+|---|---|---|
+| Home screen | Konami code | **Hyperspace jump**: the stars stretch, a ridiculous destination shows up (*"Destination: the fridge"*), and you land exactly where you were. |
+| Bridge panel | Konami code | **Protocolo Elder**: red alarm, a planetary takeover typed out live… then cancelled. |
+| Bridge panel, focus on the camera | <kbd>←</kbd> <kbd>←</kbd> <kbd>←</kbd> fast | **Modo Mira**: full-screen live camera with a rotating reticle "classifying" made-up threats (the palm tree, the neighbour's cat). <kbd>Back</kbd> leaves. |
+| Bridge panel | don't touch the remote for 3 min | Skippy gets lonely and complains. Press anything and he notices. |
+| Any card | just wait | Gold lines are rare: 11:11, 13:37, midnight, holidays, Friday the 13th, and a **1-in-120 legendary** line. |
+
+Want to see them without a remote? Open `http://<cards-server>:8099/ponte?egg=elder` or `?egg=mira` in a browser.
+
+</details>
 
 ## Where it runs
 
