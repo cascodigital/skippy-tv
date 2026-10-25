@@ -9,7 +9,8 @@ mkdir -p $W/assets/banners
 cp $P/assets/home.html $W/assets/
 cp $P/../dist/out/banner-*.png $W/assets/banners/
 cp $P/../fonts/*.ttf $W/assets/
-cp ${WALL:-$P/../dist/out/wallpaper-anim-quarto.mp4} $W/assets/wallpaper.mp4
+cp $P/../dist/out/wallpaper-anim-quarto.mp4 $W/assets/wallpaper-quarto.mp4
+cp $P/../dist/out/wallpaper-anim.mp4 $W/assets/wallpaper-sala.mp4
 sed "s/VC/$(date +%s | cut -c3-)/g" $P/AndroidManifest.xml > $W/AndroidManifest.xml
 cd $W
 $BT/aapt2 compile --dir res -o res.zip

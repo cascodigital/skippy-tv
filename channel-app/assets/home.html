@@ -74,6 +74,32 @@ body.apps #tx { opacity: 0; }
 #warp h1 { position: absolute; top: 470px; width: 100%; text-align: center; font-family: Orb; font-size: 64px; letter-spacing: 12px; color: #e6f8ff;
            text-shadow: 0 0 30px var(--cyan), 0 0 80px var(--cyan); }
 #warp h2 { position: absolute; top: 560px; width: 100%; text-align: center; font-family: Raj; font-size: 32px; color: #9fd8f0; }
+
+/* órbita do Plex: cápsula de vidro com pôster redondo, anel de progresso e slides */
+#orb { position: absolute; left: 1060px; top: 650px; width: 764px; height: 132px; border-radius: 66px; overflow: hidden;
+       background: linear-gradient(100deg, rgba(10,26,48,.78), rgba(6,14,28,.55)); border: 1px solid rgba(92,225,255,.28);
+       box-shadow: inset 0 0 30px rgba(92,225,255,.08), 0 10px 30px rgba(0,0,0,.35); transition: opacity .4s; }
+#orb.empty { opacity: 0; }
+body.apps #orb, body.row0 #orb { opacity: .35; }
+#orb .circ { position: absolute; left: 11px; top: 11px; width: 110px; height: 110px; }
+#orb .circ img { position: absolute; left: 9px; top: 9px; width: 92px; height: 92px; border-radius: 50%; object-fit: cover; object-position: 50% 25%; }
+#orb .circ .big { position: absolute; left: 9px; top: 9px; width: 92px; height: 92px; border-radius: 50%; display: none;
+       background: radial-gradient(circle, rgba(92,225,255,.25), rgba(5,11,20,.9)); color: var(--ink); font-family: Orb; font-size: 34px;
+       line-height: 92px; text-align: center; text-shadow: 0 0 14px var(--cyan); }
+#orb.stat .circ img { display: none; } #orb.stat .circ .big { display: block; }
+#orb svg { position: absolute; inset: 0; width: 110px; height: 110px; }
+#orb .spin { transform-origin: 55px 55px; animation: girar 18s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+#orb .txt { position: absolute; left: 140px; right: 40px; top: 20px; transition: opacity .5s, transform .5s; }
+#orb .txt.out { opacity: 0; transform: translateX(14px); }
+#orb .lab { font-family: Orb; font-size: 14px; letter-spacing: 3px; color: var(--cyan); }
+#orb .lab i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); margin-right: 9px; vertical-align: 2px; box-shadow: 0 0 8px var(--cyan); }
+#orb.live .lab i { background: #ff5060; box-shadow: 0 0 8px #ff5060; }
+#orb .tt { margin-top: 6px; font-family: Raj; font-weight: 700; font-size: 34px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#orb .st { margin-top: 1px; font-family: Raj; font-weight: 600; font-size: 22px; color: #a9c9e2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#orb .dots { position: absolute; right: 30px; top: 22px; }
+#orb .dots b { display: inline-block; width: 6px; height: 6px; border-radius: 3px; margin-left: 6px; background: rgba(255,255,255,.22); transition: all .4s; }
+#orb .dots b.on { width: 18px; background: var(--cyan); }
 </style>
 </head>
 <body>
@@ -82,27 +108,41 @@ body.apps #tx { opacity: 0; }
   <div id="tx"><b>SKIPPY //</b><span id="txt"></span></div>
   <div id="cards"><div class="track"></div></div>
   <div id="cardinfo"><b></b><span></span></div>
+  <div id="orb" class="empty">
+    <div class="circ"><img id="orbImg"><div class="big" id="orbBig"></div>
+      <svg viewBox="0 0 110 110"><circle cx="55" cy="55" r="51" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="4"/>
+        <circle id="orbRing" cx="55" cy="55" r="51" fill="none" stroke="#5ce1ff" stroke-width="4" stroke-linecap="round"
+          stroke-dasharray="0 320.4" transform="rotate(-90 55 55)" style="filter: drop-shadow(0 0 4px #5ce1ff); transition: stroke-dasharray .8s"/>
+        <g class="spin"><circle cx="55" cy="55" r="54" fill="none" stroke="rgba(92,225,255,.45)" stroke-width="1.2" stroke-dasharray="3 9"/>
+          <circle cx="55" cy="1" r="2.6" fill="#5ce1ff"/></g></svg></div>
+    <div class="txt" id="orbTxt"><div class="lab" id="orbLab"><i></i></div><div class="tt" id="orbTt"></div><div class="st" id="orbSt"></div></div>
+    <div class="dots" id="orbDots"></div>
+  </div>
   <div id="dock"><div class="row"></div></div>
   <div id="hint">▼  TODOS OS APPS</div>
   <div id="allwrap"><h2>TODOS OS APPS</h2><div id="all"></div></div>
 </div>
 
 <script>
-const FEED = 'http://192.168.2.46:8099/feed.json';
+const FEED = 'http://192.168.2.46:8099/feed.json?home=1';   // home própria: sem os cards extras do Projectivy
 // dock fixo: banner do tema + o que abre (pacote, pacote/activity ou ação interna)
-const DOCK = [
-  {b: 'plex', go: 'com.plexapp.android'},
-  {b: 'youtube', go: 'com.amazon.firetv.youtube'},
-  {b: 'netflix', go: 'com.netflix.ninja'},
-  {b: 'globoplay', go: 'com.globo.globotv'},
-  {b: 'max', go: 'com.hbo.hbonow'},
-  {b: 'appletv', go: 'com.apple.atve.amazon.appletv'},
-  {b: 'ponte', go: '@ponte'},
-  {b: 'settings', go: 'com.amazon.tv.launcher/.ui.SettingsActivity'},
+// dock: o primeiro pacote instalado de cada item (o mesmo HTML serve o Fire TV do quarto e o Shield da sala)
+const DOCK_ALL = [
+  {b: 'plex', go: ['com.plexapp.android']},
+  {b: 'youtube', go: ['com.amazon.firetv.youtube', 'com.google.android.youtube.tv']},
+  {b: 'netflix', go: ['com.netflix.ninja']},
+  {b: 'globoplay', go: ['com.globo.globotv']},
+  {b: 'max', go: ['com.hbo.hbonow', 'com.wbd.stream']},
+  {b: 'appletv', go: ['com.apple.atve.amazon.appletv', 'com.apple.atve.androidtv.appletv']},
+  {b: 'youtubemusic', go: ['com.google.android.youtube.tvmusic']},
+  {b: 'primevideo', go: ['com.amazon.amazonvideo.livingroom']},
+  {b: 'ponte', go: ['@ponte']},
+  {b: 'settings', go: ['com.amazon.tv.launcher/.ui.SettingsActivity', 'com.android.tv.settings/.MainSettings']},
 ];
+let DOCK = [];
 // apps fora do dock que ganham o banner do tema
 const THEMED = {'org.videolan.vlc': 'vlc', 'com.amazon.venezia': 'apps'};
-const HIDE = new Set(['com.amazon.tv.launcher', 'com.amazon.firebat', 'com.amazon.ssm', 'com.amazon.vizzini.ftvcds',
+const HIDE = new Set(['com.spocky.projengmenu', 'dev.projectivy.blueprint.app', 'com.android.tv.settings', 'com.amazon.tv.launcher', 'com.amazon.firebat', 'com.amazon.ssm', 'com.amazon.vizzini.ftvcds',
   'com.amazon.minitv.android.app', 'com.amazon.imdb.tv.android.app', 'com.amazon.hedwig', 'com.amazon.tahoe',
   'com.amazon.ftv.profilepicker', 'com.android.documentsui', 'com.android.providers.downloads.ui']);
 
@@ -113,7 +153,7 @@ const tick = () => { const d = new Date();
 tick(); setInterval(tick, 5000);
 
 // estado de foco: row 0 = cards, 1 = dock, 2 = todos os apps
-let row = 1, idx = [0, 0, 0], CARDS = [], ALL = [], loaded = false;
+let row = 1, idx = [0, 0, 0], CARDS = [], ALL = [], loaded = false, feedSig = '';
 const COLS = 7;
 
 function render() {
@@ -138,7 +178,7 @@ function focus() {
   idx[row] = Math.max(0, Math.min(count(row) - 1, idx[row]));
   const el = document.querySelector(`[data-r="${row}"][data-i="${idx[row]}"]`);
   if (el) el.classList.add('focus');
-  document.body.classList.toggle('apps', row === 2);
+  document.body.classList.toggle('apps', row === 2); document.body.classList.toggle('row0', row === 0);
   // rolagem da fileira de cards: mantém o focado visível
   const t = document.querySelector('#cards .track');
   const off = Math.max(0, Math.min(idx[0] * 542 - 542, Math.max(0, CARDS.length * 542 - 1728)));
@@ -173,6 +213,9 @@ window.onHome = () => loadFeed();
 async function loadFeed() {
   try {
     const r = await fetch(FEED, {cache: 'no-store'}); const j = await r.json();
+    const sigNew = JSON.stringify(j.cards || []);
+    if (sigNew === feedSig) { net.className = 'ok'; net.textContent = 'SKIPPY ONLINE'; loaded = true; return; }   // nada mudou: não redesenha (evita piscar)
+    feedSig = sigNew;
     const keep = row === 0 && CARDS[idx[0]] ? CARDS[idx[0]].id : null;
     CARDS = j.cards || [];
     if (keep) { const n = CARDS.findIndex(c => c.id === keep); if (n >= 0) idx[0] = n; }
@@ -182,8 +225,11 @@ async function loadFeed() {
 }
 
 try {
+  const raw = JSON.parse(Launcher.apps()), have = new Set(raw.map(a => a.pkg));
+  const ok = g => g === '@ponte' || have.has(g.split('/')[0]) || (g.includes('/') && Launcher.has(g));
+  DOCK = DOCK_ALL.map(d => ({b: d.b, go: d.go.find(ok)})).filter(d => d.go).slice(0, 8);
   const fav = new Set(DOCK.map(a => a.go.split('/')[0]));
-  ALL = JSON.parse(Launcher.apps()).filter(a => !HIDE.has(a.pkg) && !fav.has(a.pkg))
+  ALL = raw.filter(a => !HIDE.has(a.pkg) && !fav.has(a.pkg))
     .sort((a, b) => (b.tv - a.tv) || a.label.localeCompare(b.label, 'pt-BR'));
   ALL.push({pkg: 'amazon', spec: 'com.amazon.tv.launcher/.ui.HomeActivity_vNext', label: 'Tela da Amazon', banner: false,
             img: 'banners/banner-apps.png'});
@@ -229,6 +275,44 @@ function warp() {
   step();
 }
 document.addEventListener('keydown', ev => { if (warping) { ev.stopPropagation(); ev.preventDefault(); return; } kseq.push(ev.key); kseq = kseq.slice(-8); if (kseq.join() === KON.join()) { kseq = []; row = 1; idx[1] = 0; focus(); warp(); ev.stopPropagation(); ev.preventDefault(); } }, true);
+</script>
+<script>
+// órbita do Plex: slides do /api/plex (agora, continuar, próximo, chegou, semana), troca a cada 9 s
+const SRV = 'http://192.168.2.46:8099';
+let OS = [], oi = 0;
+function slides(v) {
+  const s = [], ago = t => { const d = Math.floor((Date.now() / 1000 - (t || 0)) / 86400); return d < 1 ? 'hoje' : d < 2 ? 'ontem' : 'há ' + d + ' dias'; };
+  if (v.now) s.push({lab: v.now.state === 'paused' ? 'PLEX // PAUSADO' : 'PLEX // TOCANDO AGORA', live: true, tt: v.now.show, st: v.now.sub + (v.now.left != null ? ' · faltam ' + v.now.left + ' min' : ''), img: v.now.poster, prog: v.now.prog});
+  if (v.next) s.push({lab: 'PLEX // PRÓXIMO EPISÓDIO', tt: v.next.show, st: v.next.sub, img: v.next.poster, prog: 0});
+  (v.cont || []).slice(0, 2).forEach(c => s.push({lab: 'PLEX // CONTINUAR', tt: c.show, st: c.sub + (c.left != null ? ' · faltam ' + c.left + ' min' : ''), img: c.poster, prog: c.prog}));
+  (v.new || []).slice(0, 3).forEach(n => s.push({lab: 'PLEX // CHEGOU ' + ago(n.added).toUpperCase(), tt: n.show, st: n.sub, img: n.poster, prog: 0}));
+  const w = v.week;
+  if (w && (w.eps || w.movies)) s.push({lab: 'PLEX // TUA SEMANA', stat: String(w.eps + w.movies), tt: w.eps + ' episódio' + (w.eps !== 1 ? 's' : '') + ' · ' + w.movies + ' filme' + (w.movies !== 1 ? 's' : ''),
+    st: w.top && w.top_n >= 2 ? 'Maratona: ' + w.top + ', ' + w.top_n + ' ep. Eu vi. Eu julguei.' : 'Ritmo moderado. Eu esperava mais de ti.', prog: 0});
+  return s;
+}
+function show(i) {
+  const o = document.getElementById('orb'), t = document.getElementById('orbTxt'), x = OS[i]; if (!x) return;
+  t.classList.add('out');
+  setTimeout(() => {
+    o.className = (x.live ? 'live' : '') + (x.stat ? ' stat' : '');
+    document.getElementById('orbLab').innerHTML = '<i></i>' + x.lab;
+    document.getElementById('orbTt').textContent = x.tt || '';
+    document.getElementById('orbSt').textContent = x.st || '';
+    if (x.img) document.getElementById('orbImg').src = SRV + x.img;
+    document.getElementById('orbBig').textContent = x.stat || '';
+    document.getElementById('orbRing').setAttribute('stroke-dasharray', (320.4 * (x.prog || 0)).toFixed(1) + ' 320.4');
+    document.getElementById('orbDots').innerHTML = OS.map((_, k) => '<b' + (k === i ? ' class="on"' : '') + '></b>').join('');
+    t.classList.remove('out');
+  }, 450);
+}
+async function loadPlex() {
+  try { const v = await (await fetch(SRV + '/api/plex', {cache: 'no-store'})).json(); const n = slides(v);
+    if (JSON.stringify(n) !== JSON.stringify(OS)) { OS = n; oi = oi % Math.max(1, OS.length); show(oi); }
+  } catch (e) {}
+}
+loadPlex(); setInterval(loadPlex, 60000);
+setInterval(() => { if (OS.length > 1) { oi = (oi + 1) % OS.length; show(oi); } }, 9000);
 </script>
 </body>
 </html>

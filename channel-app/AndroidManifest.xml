@@ -4,6 +4,12 @@
   <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"/>
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
   <uses-permission android:name="com.android.providers.tv.permission.WRITE_EPG_DATA"/>
+  <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
+  <!-- Android 11: sem isso a lista de apps do launcher vem quase vazia (visibilidade de pacotes) -->
+  <queries>
+    <intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LEANBACK_LAUNCHER"/></intent>
+    <intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent>
+  </queries>
   <uses-feature android:name="android.software.leanback" android:required="false"/>
   <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
   <application android:label="Skippy" android:icon="@drawable/banner" android:banner="@drawable/banner" android:usesCleartextTraffic="true">
@@ -26,10 +32,20 @@
         <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
       </intent-filter>
     </activity-alias>
+    <!-- tela inicial oficial no Android TV (Shield). Desligado por padrão; o Home liga fora do Fire TV.
+         Depois: adb shell cmd package set-home-activity dev.skippy.channel/.HomeAlias -->
+    <activity-alias android:name=".HomeAlias" android:targetActivity=".Home" android:enabled="false" android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN"/>
+        <category android:name="android.intent.category.HOME"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+      </intent-filter>
+    </activity-alias>
     <service android:name=".Watch" android:exported="false"/>
     <receiver android:name=".Sync" android:exported="true">
       <intent-filter>
         <action android:name="android.intent.action.BOOT_COMPLETED"/>
+        <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
         <action android:name="android.media.tv.action.INITIALIZE_PROGRAMS"/>
         <action android:name="dev.skippy.channel.SYNC"/>
       </intent-filter>

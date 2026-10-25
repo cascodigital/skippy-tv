@@ -33,7 +33,23 @@ go2rtc /api/stream.ts?src=rua&video=h264 ──► LiveCam.java (TS demux → Me
 - Lights allow-list: `sala` = `light.luz_da_sala` (dimmable, `brightness_pct`), `quarto` = `light.luz_quarto`,
   `cozinha` = the three kitchen relays together, `rua` = `light.luzes_do_patio` (the patio group).
 
-## Shield (Android TV 11)
+## Shield (Android TV 11) — Skippy launcher as the system home (since 2026-10-25)
+
+The same `Home` activity used on the Fire TV, with the living-room video (`assets/wallpaper-sala.mp4`) and a dock built
+from whichever apps are installed (`DOCK_ALL` in `home.html`). On Android TV the home can be replaced for real:
+the app enables its `HomeAlias` (HOME category) and `cmd package set-home-activity dev.skippy.channel/.HomeAlias`
+makes the Home button instant. Android 11 needs `<queries>`/`QUERY_ALL_PACKAGES` or the app list comes back empty.
+Projectivy's accessibility service (it intercepts Home) must be off. Back to Projectivy:
+`cmd package set-home-activity com.spocky.projengmenu/.ui.home.MainActivity` and re-enable its accessibility service.
+
+### Plex orbit
+`cards/plexw.py` + `GET /api/plex` (cached 60 s): now playing, continue watching (progress), next episode, recently
+added (seasons and films) and the week (episodes, films, the show you binged). Posters go through `/plex/img`, an
+allow-listed proxy (`/library/metadata/<id>/(thumb|art)/<n>` only), so the Plex token never reaches the TV. The
+launcher shows it as a round glass capsule with the poster in a progress ring and a slowly orbiting dot; slides
+change every 9 s. With Projectivy the same data becomes a card (`card_plex`).
+
+## Shield with Projectivy (lighter option)
 
 - Launcher: Projectivy 4.72 (Premium) with the animated MP4 as wallpaper and the Skippy icon pack.
 - Cards above the dock: Projectivy only puts **Watch Next** above the dock, so `Sync.java` publishes the

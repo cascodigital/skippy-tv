@@ -2,7 +2,7 @@
 import io, json, os, random, threading, time, urllib.parse, urllib.request
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageOps
-import quips
+import quips, plexw, re
 
 PLEX = os.environ.get('PLEX_URL', 'http://192.168.2.46:32400')
 PLEX_TOKEN = os.environ['PLEX_TOKEN']
@@ -199,6 +199,67 @@ def quip(where, node=None):
     if not c: return {'text': 'Sem contato com a casa. Ou ela me ignora, ou o Home Assistant caiu.', 'mood': 'alerta', 'where': where}
     return quips.pick(c, where, node)
 
+def circle_poster(path, d):
+    """Pôster recortado em círculo (o lado curto do pôster vira o diâmetro)."""
+    try:
+        p = plex_img(path, d, int(d * 1.5)).convert('RGB')
+        p = ImageOps.fit(p, (d, d), Image.LANCZOS, centering=(0.5, 0.3))
+    except Exception:
+        p = Image.new('RGB', (d, d), NAVY)
+    m = Image.new('L', (d * 4, d * 4), 0); ImageDraw.Draw(m).ellipse([0, 0, d * 4 - 1, d * 4 - 1], fill=255)
+    out = Image.new('RGBA', (d, d), (0, 0, 0, 0)); out.paste(p, (0, 0), m.resize((d, d), Image.LANCZOS))
+    return out
+
+def card_plex(pw):
+    feat = pw.get('now') or pw.get('next') or (pw.get('cont') or [None])[0] or (pw.get('new') or [None])[0]
+    if not feat: raise ValueError('plex vazio')
+    try:
+        u = urllib.parse.parse_qs(feat['art'].split('?', 1)[1])['u'][0]
+        bg = ImageOps.fit(plex_img(u, W, H).convert('RGB'), (W, H), Image.LANCZOS).filter(ImageFilter.GaussianBlur(14))
+    except Exception:
+        bg = Image.new('RGB', (W, H), NAVY)
+    bg = Image.blend(bg, ImageOps.colorize(ImageOps.grayscale(bg), black=(3, 8, 18), white=(120, 190, 230)), 0.5).convert('RGBA')
+    bg.alpha_composite(Image.new('RGBA', (W, H), NAVY + (150,)))
+    lab = {'now': 'TOCANDO AGORA', 'next': 'PRÓXIMO EPISÓDIO', 'cont': 'CONTINUAR', 'new': 'CHEGOU NO PLEX'}[feat['kind']]
+    im = frame(bg, 'PLEX // ' + lab)
+    d = dr(im)
+    # órbita: pôster redondo + anel de progresso + órbita tracejada
+    cx, cy, R = 200, 290, 130
+    ring = Image.new('RGBA', (W, H), (0, 0, 0, 0)); rd = ImageDraw.Draw(ring)
+    for a0 in range(0, 360, 12):
+        rd.arc([cx - R - 34, cy - R - 34, cx + R + 34, cy + R + 34], a0, a0 + 5, fill=CYAN + (110,), width=2)
+    rd.ellipse([cx - R - 14, cy - R - 14, cx + R + 14, cy + R + 14], outline=(255, 255, 255, 40), width=8)
+    if feat.get('prog'):
+        rd.arc([cx - R - 14, cy - R - 14, cx + R + 14, cy + R + 14], -90, -90 + 360 * feat['prog'], fill=CYAN + (255,), width=8)
+    im.alpha_composite(ring.filter(ImageFilter.GaussianBlur(5))); im.alpha_composite(ring)
+    pu = urllib.parse.parse_qs(feat['poster'].split('?', 1)[1])['u'][0] if '?' in feat['poster'] else ''
+    im.alpha_composite(circle_poster(pu, 2 * R), (cx - R, cy - R))
+    if feat.get('prog'):
+        t = f"{int(feat['prog'] * 100)}%"; f = ORB(22); tw = d.textlength(t, font=f)
+        d.rounded_rectangle([cx - tw / 2 - 14, cy + R - 6, cx + tw / 2 + 14, cy + R + 30], 16, fill=NAVY + (230,), outline=CYAN + (200,), width=2)
+        d.text((cx - tw / 2, cy + R - 2), t, font=f, fill=CYAN + (255,))
+    x = 400
+    glow_text(im, (x, 110), fit_text(d, feat['show'] or '', RAJB(58), 520), RAJB(58), r=6)
+    d.text((x, 182), fit_text(d, feat['sub'] or '', RAJ(32), 520), font=RAJ(32), fill=(210, 236, 255, 255))
+    if feat.get('left'):
+        d.text((x, 226), f"FALTAM {feat['left']} MIN", font=ORB(20), fill=CYAN + (230,))
+    y = 290
+    news = [n for n in pw.get('new', []) if n['key'] != feat['key']][:2]
+    if news:
+        d.text((x, y), 'CHEGOU', font=ORB(17), fill=CYAN + (200,))
+        d.text((x + 110, y - 4), fit_text(d, '  ·  '.join(f"{n['show']}" + (f" {n['sub'].replace('Temporada ', 'T')}" if n['type'] == 'season' else '') for n in news), RAJ(28), 420), font=RAJ(28), fill=(225, 242, 255, 255))
+        y += 50
+    wk = pw.get('week')
+    if wk:
+        d.text((x, y), 'SEMANA', font=ORB(17), fill=CYAN + (200,))
+        sw = f"{wk['eps']} episódio{'s' if wk['eps'] != 1 else ''}  ·  {wk['movies']} filme{'s' if wk['movies'] != 1 else ''}"
+        d.text((x + 110, y - 4), sw, font=RAJ(28), fill=(225, 242, 255, 255))
+        y += 50
+        if wk.get('top') and wk.get('top_n', 0) >= 2:
+            d.text((x, y), fit_text(d, f"Maratona: {wk['top']}, {wk['top_n']} ep. Eu vi. Eu julguei.", RAJ(26), 520), font=RAJ(26), fill=(185, 215, 240, 235))
+    d.text((x, H - 66), 'OK PARA ABRIR NO PLEX', font=ORB(16), fill=CYAN + (180,))
+    return im, feat
+
 def card_quote(q):
     wall = Image.open(WALL).convert('RGB')
     bg = wall.crop((300, 500, 300 + 2200, 500 + 1238)).resize((W, H), Image.LANCZOS).convert('RGBA')
@@ -383,6 +444,13 @@ def render():
     except Exception as e:
         print('quote', e, flush=True)
     try:
+        pw = plexw.data(PLEX, PLEX_TOKEN)
+        im_, feat = card_plex(pw)
+        state['plex_sala'] = {'id': 'plexorb', 'title': feat['show'], 'desc': feat['sub'], 'img': save(im_, 'plexorb'),
+                              'intent': via_skippy(plexw.link(feat, PLEX_MID), 'com.plexapp.android')}
+    except Exception as e:
+        print('plexorb', e, flush=True)
+    try:
         cards.append({'id': 'camera', 'title': 'Câmera do pátio', 'desc': 'Ao vivo · OK para abrir', 'img': save(card_camera(), 'camera'),
                       'intent': ponte_intent('camera')})
     except Exception as e:
@@ -449,8 +517,9 @@ class Handler(BaseHTTPRequestHandler):
         p = self.path.split('?')[0]
         if p == '/feed.json':
             f = feed(); node = NODES.get(self.client_address[0])
-            if node == 'sala' and state.get('quote_sala'):
-                f = dict(f, cards=[state['quote_sala']] + f['cards'])
+            if node == 'sala' and 'home=1' not in self.path:   # Projectivy: fala e órbita viram cards (a home própria mostra ao vivo)
+                extra = [c for c in (state.get('quote_sala'), state.get('plex_sala')) if c]
+                f = dict(f, cards=extra + f['cards'])
             body = json.dumps(f, ensure_ascii=False).encode(); ct = 'application/json'
         elif p.startswith('/c/') and '/' not in p[3:] and os.path.exists(OUT + '/' + p[3:]):
             body = open(OUT + '/' + p[3:], 'rb').read(); ct = 'image/png'
@@ -465,6 +534,21 @@ class Handler(BaseHTTPRequestHandler):
         elif p == '/static/video-rtc.js':
             # player do go2rtc servido daqui: import de módulo de outra origem é barrado por CORS
             body = get(f'{GO2RTC}/video-rtc.js'); ct = 'text/javascript'
+        elif p == '/api/plex':
+            v = dict(plexw.data(PLEX, PLEX_TOKEN))
+            for k in ('now', 'next'):
+                if v.get(k): v[k] = dict(v[k], open=via_skippy(plexw.link(v[k], PLEX_MID), 'com.plexapp.android'))
+            v['cont'] = [dict(x, open=via_skippy(plexw.link(x, PLEX_MID), 'com.plexapp.android')) for x in v['cont']]
+            v['new'] = [dict(x, open=via_skippy(plexw.link(x, PLEX_MID), 'com.plexapp.android')) for x in v['new']]
+            body = json.dumps(v, ensure_ascii=False).encode(); ct = 'application/json'
+        elif p == '/plex/img':
+            q = urllib.parse.parse_qs(self.path.split('?', 1)[1] if '?' in self.path else '')
+            u = q.get('u', [''])[0]
+            if not re.fullmatch(r'/library/metadata/\d+/(thumb|art)/\d+', u):   # só pôster/arte do Plex
+                return self.reply(403, b'', 'text/plain')
+            w_, h_ = (min(800, int(q.get(k, ['300'])[0])) for k in ('w', 'h'))
+            qq = urllib.parse.urlencode({'width': w_, 'height': h_, 'minSize': 1, 'upscale': 1, 'url': u, 'X-Plex-Token': PLEX_TOKEN})
+            body = get(f'{PLEX}/photo/:/transcode?{qq}'); ct = 'image/jpeg'
         elif p == '/api/quip':
             q = urllib.parse.parse_qs(self.path.split('?', 1)[1] if '?' in self.path else '')
             node = q.get('node', [None])[0] or NODES.get(self.client_address[0])

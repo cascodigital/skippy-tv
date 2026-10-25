@@ -14,17 +14,24 @@ a live patio camera at ~1 s latency · house lights with dimmer · an AI with an
 ![Plex](https://img.shields.io/badge/Plex-continue%20watching-EBAF00?logo=plex&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 
-![Animated wallpaper](docs/screenshots/wallpaper.gif)
+![Demo on the Fire TV](docs/screenshots/demo.gif)
+
+<sub>Real capture from the bedroom Fire TV Stick (1080p, sped-up cuts): home, cards, the Bridge with the live camera, and the Konami hyperspace jump.
+Full 50-second recording: <a href="docs/demo-firetv-1080p.mp4">docs/demo-firetv-1080p.mp4</a>.</sub>
 
 </div>
 
+> **Built for 4K TVs.** The UI is laid out at 1080p and scaled by the box; the living-room Shield renders it at native 3840×2160
+> (its screenshot below is a 4K capture), the static wallpaper is rendered at 4K. The demo above is 1080p only because the
+> Fire TV Stick records at 1080p.
+
 ## What it looks like
 
-![Fire TV home: Skippy talking above live cards](docs/screenshots/firetv-home.jpg)
-<sub>Fire TV launcher. The line above the cards is Skippy reading the house — here a real alert: the living-room door had been open for 22 minutes.</sub>
+![NVIDIA Shield home, 4K](docs/screenshots/shield-home.jpg)
+<sub>NVIDIA Shield (4K capture, downscaled): Skippy's line, HUD cards, the round **Plex orbit** widget (next episode, continue watching with a progress ring, new arrivals, your week) and the dock. A real alert, too: the living-room door had been open for 2 hours.</sub>
 
-![NVIDIA Shield home](docs/screenshots/shield-home.jpg)
-<sub>NVIDIA Shield with Projectivy: animated wallpaper, the Skippy icon pack and cards in the *Watch Next* row.</sub>
+![Fire TV home](docs/screenshots/firetv-home.jpg)
+<sub>Same launcher on the bedroom Fire TV Stick, with bedroom-aware lines.</sub>
 
 | The Bridge: live camera + lights | Camera full screen |
 |---|---|
@@ -59,9 +66,9 @@ None of them touch the house: the planetary takeover is cancelled because *"the 
 
 | Device | Status | How it is themed |
 |---|---|---|
-| **NVIDIA Shield TV, 1st gen** (2015, Tegra X1) — Android TV 11 — living room | ✅ tested daily | [Projectivy Launcher](https://play.google.com/store/apps/details?id=com.spocky.projengmenu) + the Skippy icon pack + cards in Android TV *Watch Next*; Skippy's line is the first card |
-| **Amazon Fire TV Stick 4K, 1st gen** (AFTMM) — Fire OS 6 / Android 7.1 — bedroom | ✅ tested daily | Custom launcher (`Home` activity) — Projectivy needs Android 10 |
-| Any other Android TV / Google TV (Chromecast with Google TV, Mi Box, TCL, Philips…) | ⚠️ should work, not tested | Android TV 10+: the Shield path. Older Android or Fire OS: the Fire TV path |
+| **NVIDIA Shield TV, 1st gen** (2015, Tegra X1) — Android TV 11, 4K — living room | ✅ tested daily | The Skippy launcher as the real system home (instant Home button). Projectivy + icon pack + *Watch Next* cards also supported as a lighter option |
+| **Amazon Fire TV Stick 4K, 1st gen** (AFTMM) — Fire OS 6 / Android 7.1 — bedroom | ✅ tested daily | The same Skippy launcher; Amazon does not allow replacing its home, so a watcher brings Skippy back ~5 s after Home |
+| Any other Android TV / Google TV (Chromecast with Google TV, Mi Box, TCL, Philips…) | ⚠️ should work, not tested | Same app, Android 7.1+; the dock picks whichever of its apps are installed |
 
 The whole thing is plain Android APIs (Watch Next, `MediaCodec`, `WebView`), a small Python server and
 Home Assistant's REST API — nothing Shield- or Amazon-specific except the workarounds documented in
@@ -91,13 +98,14 @@ Fire OS / older Android), what to change, in which order, and the traps we alrea
 ├── cards/              skippy-cards: Python server (Docker) that renders the HUD cards and serves the Bridge panel
 │   ├── app.py          /feed.json, /c/*.png, /ponte, /api/lights, POST /api/light (allow-list), /api/quip
 │   ├── quips.py        Skippy's lines: reads the house (HA, Plex, clock) and picks a context-aware joke
+│   ├── plexw.py        Plex orbit: now playing, continue, next episode, new arrivals, your week
 │   └── ponte.html      Bridge panel UI (D-pad driven)
 ├── channel-app/        Android app dev.skippy.channel (plain Java, no Gradle)
 │   ├── src/…/Sync.java     pulls the feed → Watch Next + preview channel (Android 8+)
 │   ├── src/…/Main.java     card click trampoline (Projectivy rewrites the card intent package)
 │   ├── src/…/Ponte.java    Bridge panel: transparent WebView over a SurfaceView
 │   ├── src/…/LiveCam.java  MPEG-TS demuxer → MediaCodec (low-latency live camera)
-│   ├── src/…/Home.java     custom launcher (Fire TV): looping video wallpaper + assets/home.html
+│   ├── src/…/Home.java     the Skippy launcher (Shield + Fire TV): looping video wallpaper + assets/home.html
 │   └── src/…/Watch.java    Fire TV: brings Home back when the Amazon home shows up
 ├── fonts/              Orbitron, Rajdhani (SIL OFL)
 └── logos/              Simple Icons SVGs + a few drawn ones

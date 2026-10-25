@@ -40,6 +40,7 @@ import org.json.JSONObject;
 // O Watch (estatísticas de uso) traz esta tela de volta quando a home da Amazon aparece.
 public class Home extends Activity implements SurfaceHolder.Callback {
     static final String TAG = "SkippyHome";
+    static final boolean FIRE = android.os.Build.MODEL.startsWith("AFT");   // Fire TV do quarto; o resto (Shield da sala) usa o perfil sala
     final Handler ui = new Handler(Looper.getMainLooper());
     SurfaceView surface;
     WebView web;
@@ -63,10 +64,8 @@ public class Home extends Activity implements SurfaceHolder.Callback {
         s.setAllowUniversalAccessFromFileURLs(true);   // home.html (file://) busca o feed no .46
         s.setUseWideViewPort(true);
         s.setLoadWithOverviewMode(true);
-        // Shield: escala mínima + overview encaixa os 1920 px. WebView da Amazon (Fire OS 6) ignora o viewport e
-        // usa a densidade (200%); lá o zoom é fixado em px de tela por px CSS (100% numa tela de 1920 px).
-        if (android.os.Build.VERSION.SDK_INT >= 26) web.setInitialScale(1);
-        else web.setInitialScale(Math.round(100f * getResources().getDisplayMetrics().widthPixels / 1920f));
+        // página de 1920 px: zoom = px de tela por px CSS (o WebView da Amazon ignora o viewport; no Shield o file:// também)
+        web.setInitialScale(Math.round(100f * getResources().getDisplayMetrics().widthPixels / 1920f));
         web.setWebViewClient(new WebViewClient());
         web.setWebChromeClient(new Chrome());
         web.addJavascriptInterface(new Bridge(this), "Launcher");
@@ -75,6 +74,10 @@ public class Home extends Activity implements SurfaceHolder.Callback {
         setContentView(root);
         web.loadUrl("file:///android_asset/home.html");
         Watch.start(this);
+        if (!FIRE) {   // Android TV de verdade: vira tela inicial oficial (alias com HOME; o ADB depois roda set-home-activity)
+            getPackageManager().setComponentEnabledSetting(new ComponentName(this, getPackageName() + ".HomeAlias"),
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
+        }
         web.requestFocus();
     }
 
@@ -92,6 +95,13 @@ public class Home extends Activity implements SurfaceHolder.Callback {
         @JavascriptInterface public String apps() { return h.listApps(); }
         @JavascriptInterface public void launch(String spec) { h.ui.post(() -> h.launch(spec)); }
         @JavascriptInterface public void open(String intentUri) { h.ui.post(() -> h.openUri(intentUri)); }
+        @JavascriptInterface public boolean has(String spec) {
+            try {
+                String[] p = spec.split("/", 2);
+                h.getPackageManager().getActivityInfo(new ComponentName(p[0], p[1].startsWith(".") ? p[0] + p[1] : p[1]), 0);
+                return true;
+            } catch (Exception e) { return false; }
+        }
     }
 
     String listApps() {
@@ -164,7 +174,7 @@ public class Home extends Activity implements SurfaceHolder.Callback {
     void play() {
         if (!haveSurface || !resumed || mp != null) return;
         try {
-            AssetFileDescriptor fd = getAssets().openFd("wallpaper.mp4");
+            AssetFileDescriptor fd = getAssets().openFd(FIRE ? "wallpaper-quarto.mp4" : "wallpaper-sala.mp4");
             mp = new MediaPlayer();
             mp.setDataSource(fd.getFileDescriptor(), fd.getStartOffset(), fd.getLength());
             fd.close();
