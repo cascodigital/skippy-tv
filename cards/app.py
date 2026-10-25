@@ -4,12 +4,13 @@ from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageOps
 import quips, plexw, re
 
-PLEX = os.environ.get('PLEX_URL', 'http://192.168.2.46:32400')
+HOUSE = json.load(open(os.environ.get('HOUSE_JSON', os.path.join(os.environ.get('APP_DIR', '/app'), 'house.json'))))   # docs/HOUSE.md
+PLEX = os.environ.get('PLEX_URL', HOUSE['plex']['url'])
 PLEX_TOKEN = os.environ['PLEX_TOKEN']
-PLEX_MID = os.environ.get('PLEX_MID', '')
-HASS = os.environ.get('HASS_URL', 'http://192.168.2.25:8123')
+PLEX_MID = os.environ.get('PLEX_MID') or HOUSE.get('plex', {}).get('machine_id', '')
+HASS = os.environ.get('HASS_URL', HOUSE['hass']['url'])
 HASS_TOKEN = os.environ['HASS_TOKEN']
-PUBLIC = os.environ.get('PUBLIC_URL', 'http://192.168.2.46:8099')
+PUBLIC = os.environ.get('PUBLIC_URL', HOUSE['server']['public_url'])
 OUT = os.environ.get('OUT_DIR', '/data/c')
 F = os.environ.get('APP_DIR', '/app') + '/fonts/'
 APPD = os.environ.get('APP_DIR', '/app')
@@ -182,12 +183,13 @@ _ctx = {'t': 0, 'c': None}
 def ctx():
     if not _ctx['c'] or time.time() - _ctx['t'] > 15:
         try:
-            _ctx['c'] = quips.context(HASS, HASS_TOKEN, PLEX, PLEX_TOKEN); _ctx['t'] = time.time()
+            _ctx['c'] = quips.context(HASS, HASS_TOKEN, PLEX, PLEX_TOKEN, HOUSE); _ctx['t'] = time.time()
         except Exception as e:
             print('ctx', e, flush=True)
     return _ctx['c']
 
-NODES = {'192.168.2.111': 'sala', '192.168.2.140': 'quarto'}   # quem pede define o cômodo das frases
+NODES = {d['ip']: d['room'] for d in HOUSE.get('devices', [])}   # quem pede define o cômodo das frases
+DEVS = {d['room']: d for d in HOUSE.get('devices', [])}
 
 def quip(where, node=None):
     try:   # teste de layout: echo "frase" > data/force_quip.txt (apagar depois)
@@ -280,7 +282,7 @@ def card_quote(q):
     tcol = (255, 225, 228, 255) if q['mood'] == 'alerta' else (255, 236, 190, 255) if q['mood'] == 'rara' else (235, 250, 255, 255)
     for i, ln in enumerate(lines):
         glow_text(im, (90, y0 + i * lh), ln, f, fill=tcol, glow=col, r=5)
-    d.text((90, H - 70), 'SKIPPY  //  ELDER AI  //  BRIDGE 01', font=ORB(18), fill=col + (190,))
+    d.text((90, H - 70), 'SKIPPY  //  ELDER AI  //  ' + DEVS.get('sala', {}).get('bridge', 'BRIDGE 01'), font=ORB(18), fill=col + (190,))
     return im
 
 def card_status():
@@ -291,9 +293,10 @@ def card_status():
     col = MOOD.get(q['mood'], CYAN)
     im = frame(bg, {'alerta': 'ALERTA // SKIPPY', 'rara': 'RARA // SKIPPY'}.get(q['mood'], 'PONTE // SALA'), col)
     d = dr(im)
-    t = hass('sensor.sala_temperatura')['state']; u = hass('sensor.sala_umidade')['state']
-    tr = hass('sensor.0xa4c13822447901eb_temperature')['state']; ur = hass('sensor.0xa4c13822447901eb_humidity')['state']
-    w = hass('weather.forecast_home')
+    CL = HOUSE['climate']
+    t = hass(CL['indoor_temp'])['state']; u = hass(CL['indoor_hum'])['state']
+    tr = hass(CL['outdoor_temp'])['state']; ur = hass(CL['outdoor_hum'])['state']
+    w = hass(CL['weather'])
     def num(x):
         try: return f'{float(x):.1f}'.replace('.', ',')
         except Exception: return '--'
@@ -325,14 +328,10 @@ def card_status():
     return im
 
 # ---------- luzes (lista branca: o painel só alcança estes 4 grupos) ----------
-LIGHTS = [
-    {'id': 'sala', 'name': 'Sala', 'ents': ['light.luz_da_sala'], 'dim': True},
-    {'id': 'quarto', 'name': 'Quarto', 'ents': ['light.luz_quarto']},
-    {'id': 'cozinha', 'name': 'Cozinha', 'ents': ['light.luz_da_porta', 'light.luz_da_pia', 'light.luz_freezer']},
-    {'id': 'rua', 'name': 'Rua', 'ents': ['light.luzes_do_patio']},
-]
+LIGHTS = [{'id': l['id'], 'name': l['name'], 'ents': l['entities'], 'dim': bool(l.get('dimmable'))} for l in HOUSE['lights']]
 LMAP = {l['id']: l for l in LIGHTS}
-GO2RTC = os.environ.get('GO2RTC_URL', 'http://192.168.2.102:1984')
+GO2RTC = os.environ.get('GO2RTC_URL', HOUSE['camera']['go2rtc'])
+CAM = HOUSE['camera']
 
 def hass_call(domain, service, data):
     req = urllib.request.Request(f'{HASS}/api/services/{domain}/{service}', data=json.dumps(data).encode(), method='POST',
@@ -367,7 +366,7 @@ def light_action(lid, action, value=None):
         raise ValueError('acao')
 
 def card_camera():
-    snap = Image.open(io.BytesIO(get(f'{GO2RTC}/api/frame.jpeg?src=rua', timeout=20))).convert('RGB')
+    snap = Image.open(io.BytesIO(get(f'{GO2RTC}/api/frame.jpeg?src={CAM["stream"]}', timeout=20))).convert('RGB')
     bg = ImageOps.fit(snap, (W, H), Image.LANCZOS)
     bg = Image.blend(bg, ImageOps.colorize(ImageOps.grayscale(bg), black=(3, 8, 18), white=(190, 235, 255)), 0.25).convert('RGBA')
     sh = Image.new('L', (W, H), 0); sd = ImageDraw.Draw(sh)
@@ -377,19 +376,19 @@ def card_camera():
     c = ctx() or {}
     mm = c.get('motion_min')
     m1 = c.get('motion_1h') or 0
-    mov = (c.get('motion_on') or (mm is not None and mm < 3)) and m1 < 15   # com ventania não é alerta (ver quips.py)
-    im = frame(bg, 'MOVIMENTO // PÁTIO' if mov else 'AO VIVO // PÁTIO', MOOD['alerta'] if mov else None)
+    mov = (c.get('motion_on') or (mm is not None and mm < 3)) and m1 < CAM.get('windy_per_hour', 15)   # com ventania não é alerta (ver quips.py)
+    im = frame(bg, 'MOVIMENTO // ' + CAM['label'] if mov else 'AO VIVO // ' + CAM['label'], MOOD['alerta'] if mov else None)
     d = dr(im)
     d.ellipse([W - 92, 34, W - 66, 60], fill=(255, 70, 70, 255))
     if mov:
         d.rectangle([0, 92, W, 150], fill=(160, 20, 30, 190))
-        d.text((58, 100), 'MOVIMENTO NO PÁTIO ' + ('AGORA' if c.get('motion_on') or mm < 1 else f'HÁ {int(mm)} MIN'), font=ORB(30), fill=(255, 235, 235, 255))
+        d.text((58, 100), 'MOVIMENTO // ' + CAM['label'] + ' ' + ('AGORA' if c.get('motion_on') or mm < 1 else f'HÁ {int(mm)} MIN'), font=ORB(30), fill=(255, 235, 235, 255))
     elif mm is not None:
         lab = f'último movimento {quips._min(mm)}' + (f' · {m1}/h' if m1 else '')
         f_ = RAJ(26); tw = d.textlength(lab, font=f_)
         d.rounded_rectangle([W - 60 - tw - 24, 86, W - 60, 126], 8, fill=NAVY + (200,))
         d.text((W - 60 - tw - 12, 89), lab, font=f_, fill=(200, 230, 255, 235))
-    glow_text(im, (56, H - 170), 'CÂMERA DO PÁTIO', RAJB(76), r=6)
+    glow_text(im, (56, H - 170), CAM['title'].upper(), RAJB(76), r=6)
     d.text((58, H - 88), 'OK para abrir ao vivo // ' + __import__('datetime').datetime.now(quips.TZ).strftime('%H:%M'), font=ORB(20), fill=CYAN + (230,))
     return im
 
@@ -451,7 +450,7 @@ def render():
     except Exception as e:
         print('plexorb', e, flush=True)
     try:
-        cards.append({'id': 'camera', 'title': 'Câmera do pátio', 'desc': 'Ao vivo · OK para abrir', 'img': save(card_camera(), 'camera'),
+        cards.append({'id': 'camera', 'title': CAM['title'], 'desc': 'Ao vivo · OK para abrir', 'img': save(card_camera(), 'camera'),
                       'intent': ponte_intent('camera')})
     except Exception as e:
         print('camera', e, flush=True)
@@ -502,7 +501,7 @@ def refresher():
 def alert_sig():
     c = ctx() or {}
     mm = c.get('motion_min')
-    return (bool((c.get('motion_on') or (mm is not None and mm < 3)) and (c.get('motion_1h') or 0) < 15), bool(c.get('door_open')),
+    return (bool((c.get('motion_on') or (mm is not None and mm < 3)) and (c.get('motion_1h') or 0) < CAM.get('windy_per_hour', 15)), bool(c.get('door_open')),
             tuple(sorted((c.get('lights') or {}).items())))   # luz mudou: card de luzes redesenha em até ~20 s
 
 def feed():
@@ -526,7 +525,11 @@ class Handler(BaseHTTPRequestHandler):
         elif p == '/health':
             body = b'ok'; ct = 'text/plain'
         elif p == '/ponte':
-            body = open(APPD + '/ponte.html', 'rb').read(); ct = 'text/html; charset=utf-8'
+            dev = DEVS.get(NODES.get(self.client_address[0]), next(iter(DEVS.values()), {}))
+            cfg = {'go2rtc': GO2RTC, 'stream': CAM['stream'], 'cam_label': CAM['label'],
+                   'node': f"{dev.get('bridge', 'BRIDGE')} · {dev.get('label', '')} · NODE {dev.get('ip', '')}"}
+            body = open(APPD + '/ponte.html', encoding='utf-8').read().replace('/*__CFG__*/{}', json.dumps(cfg, ensure_ascii=False)).encode()
+            ct = 'text/html; charset=utf-8'
         elif p in ('/static/wallpaper.jpg', '/static/Orbitron.ttf', '/static/Rajdhani-SemiBold.ttf', '/static/Rajdhani-Bold.ttf'):
             n = p.split('/')[-1]
             body = open(WALL if n == 'wallpaper.jpg' else F + n, 'rb').read()

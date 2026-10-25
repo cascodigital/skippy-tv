@@ -6,48 +6,54 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 TZ = ZoneInfo('America/Sao_Paulo')
-MOTION = 'binary_sensor.tapo_c206_motion_alarm'   # o "person_detection" da Tapo fica travado em on (medido 25/10/2026)
-DOOR_SALA = 'binary_sensor.door_sensor_2_door'
-LIGHTS = {'sala': 'light.luz_da_sala', 'quarto': 'light.luz_quarto', 'cozinha': 'light.luz_da_porta', 'rua': 'light.luzes_do_patio'}
+# entidades vêm do house.json (passado por app.py em context()); ver docs/HOUSE.md
 recent = []   # últimas frases ditas, pra não repetir
 
 def _get(url, headers, timeout=8):
     with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=timeout) as r:
         return json.loads(r.read())
 
-def context(hass_url, hass_token, plex_url=None, plex_token=None):
+def context(hass_url, hass_token, plex_url=None, plex_token=None, house=None):
+    house = house or {}
+    cam, door, cl = house.get('camera', {}), house.get('door', {}), house.get('climate', {})
+    MOTION, DOOR = cam.get('motion_entity'), door.get('entity')
     H = {'Authorization': f'Bearer {hass_token}'}
     st = {s['entity_id']: s for s in _get(f'{hass_url}/api/states', H)}
     now = datetime.now(TZ)
     def since(e):
-        s = st.get(e)
+        s = st.get(e) if e else None
         if not s: return None
         return (now - datetime.fromisoformat(s['last_changed']).astimezone(TZ)).total_seconds() / 60
     def num(e):
         try: return float(st[e]['state'])
         except Exception: return None
-    c = {'now': now, 'st': st}
-    # movimento no pátio (câmera no pátio, de frente pro portão): última vez + quantos na última hora (histórico)
-    try:
-        start = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M:%SZ')
-        h = _get(f'{hass_url}/api/history/period/{start}?filter_entity_id={MOTION}&minimal_response&no_attributes', H)
-        c['motion_1h'] = sum(1 for x in (h[0] if h else []) if x['state'] == 'on')
-    except Exception:
-        c['motion_1h'] = None
-    m = st.get(MOTION, {})
-    c['motion_on'] = m.get('state') == 'on'
-    c['motion_min'] = since(MOTION) if m else None
-    c['door_open'] = st.get(DOOR_SALA, {}).get('state') == 'on'
-    c['door_min'] = since(DOOR_SALA)
-    c['lights'] = {k: st.get(v, {}).get('state') == 'on' for k, v in LIGHTS.items()}
-    c['bri_sala'] = st.get('light.luz_da_sala', {}).get('attributes', {}).get('brightness')
-    c['t_sala'] = num('sensor.sala_temperatura'); c['u_sala'] = num('sensor.sala_umidade')
-    c['t_rua'] = num('sensor.0xa4c13822447901eb_temperature')
-    c['weather'] = st.get('weather.forecast_home', {}).get('state')
-    c['noite'] = st.get('binary_sensor.e_noite', {}).get('state') == 'on'
-    c['shield_on'] = st.get('media_player.android_tv_2', {}).get('state') not in (None, 'off', 'unavailable', 'standby')
-    c['tv_quarto_on'] = st.get('media_player.borboleta_2', {}).get('state') not in (None, 'off', 'unavailable', 'standby')
-    c['notebook'] = st.get('input_boolean.ilatitude', {}).get('state') == 'on'
+    def on(e): return bool(e) and st.get(e, {}).get('state') == 'on'
+    c = {'now': now, 'st': st, 'windy': cam.get('windy_per_hour', 15), 'door_room': door.get('room', 'sala')}
+    # movimento da câmera: última vez + quantos na última hora (histórico)
+    c['motion_1h'] = None
+    if MOTION:
+        try:
+            start = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M:%SZ')
+            h = _get(f'{hass_url}/api/history/period/{start}?filter_entity_id={MOTION}&minimal_response&no_attributes', H)
+            c['motion_1h'] = sum(1 for x in (h[0] if h else []) if x['state'] == 'on')
+        except Exception:
+            pass
+    c['motion_on'] = on(MOTION)
+    c['motion_min'] = since(MOTION)
+    c['door_open'] = on(DOOR)
+    c['door_min'] = since(DOOR)
+    lights = house.get('lights', [])
+    c['lights'] = {l['id']: any(on(e) for e in l['entities']) for l in lights}
+    dim = next((l for l in lights if l.get('dimmable')), None)
+    c['bri_sala'] = st.get(dim['entities'][0], {}).get('attributes', {}).get('brightness') if dim else None
+    c['t_sala'] = num(cl.get('indoor_temp')); c['u_sala'] = num(cl.get('indoor_hum'))
+    c['t_rua'] = num(cl.get('outdoor_temp'))
+    c['weather'] = st.get(cl.get('weather'), {}).get('state')
+    c['noite'] = on(cl.get('is_night'))
+    busy = lambda e: bool(e) and st.get(e, {}).get('state') not in (None, 'off', 'unavailable', 'standby')
+    rooms = {d['room']: busy(d.get('media_player')) for d in house.get('devices', [])}
+    c['shield_on'] = rooms.get('sala', False); c['tv_quarto_on'] = rooms.get('quarto', False)
+    c['notebook'] = on(house.get('extras', {}).get('laptop_open'))
     c['plex'] = None
     if plex_url and plex_token:
         try:
@@ -76,7 +82,7 @@ def rules(c, node=None):
 
     # ---------- pátio (câmera) ----------
     m1 = c.get('motion_1h')
-    ventania = m1 is not None and m1 >= 15   # a palmeira dispara a câmera o dia todo: aí movimento não é notícia
+    ventania = m1 is not None and m1 >= c['windy']   # a palmeira dispara a câmera o dia todo: aí movimento não é notícia
     agora = c['motion_on'] or (c['motion_min'] is not None and c['motion_min'] < 2)
     if agora and ventania:
         add(68, 'normal', 'Movimento no pátio agora. Pela estatística do dia, é a palmeira dançando de novo.',
@@ -102,10 +108,10 @@ def rules(c, node=None):
 
     # ---------- porta da sala ----------
     if c['door_open'] and c['door_min'] and c['door_min'] > 20:
-        add(85, 'alerta', f'A porta da sala está aberta {_min(c["door_min"])}. Entra mosquito, sai dinheiro.',
-            f'Porta da sala aberta {_min(c["door_min"])}. Isso é convite ou esquecimento, macaco?')
+        add(85, 'alerta', f'A porta da {c["door_room"]} está aberta {_min(c["door_min"])}. Entra mosquito, sai dinheiro.',
+            f'Porta da {c["door_room"]} aberta {_min(c["door_min"])}. Isso é convite ou esquecimento, macaco?')
     elif c['door_open']:
-        add(60, 'normal', 'Porta da sala aberta. Fecha. Por favor. Eu peço só uma vez. Mentira, peço sempre.')
+        add(60, 'normal', f'Porta da {c["door_room"]} aberta. Fecha. Por favor. Eu peço só uma vez. Mentira, peço sempre.')
 
     # ---------- Plex ----------
     p = c.get('plex')
@@ -119,9 +125,9 @@ def rules(c, node=None):
     L = c['lights']; acesas = sum(L.values())
     if L.get('rua') and not c['noite'] and 9 <= hr <= 16:
         add(65, 'normal', 'Luz da rua acesa em pleno dia. O sol está ofendido.')
-    if acesas == 4:
+    if acesas == len(L) and len(L) >= 3:
         add(55, 'normal', 'Todas as luzes acesas. A conta da CEEE agradece. O painel solar chora.',
-            'Quatro luzes ligadas. Estamos recebendo um disco voador?')
+            'Tudo aceso. Estamos recebendo um disco voador?')
     if acesas == 0 and c['noite']:
         add(55, 'normal', 'Tudo apagado à noite. Modo caverna ativado. Combina contigo.')
     if L.get('cozinha') and (hr >= 23 or hr < 5):

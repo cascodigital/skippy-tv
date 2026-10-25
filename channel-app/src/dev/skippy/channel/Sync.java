@@ -25,7 +25,7 @@ import org.json.JSONObject;
 // Publica o feed do skippy-cards (.46) como canal de pré-visualização "Skippy".
 public class Sync extends BroadcastReceiver {
     static final String TAG = "SkippyChannel";
-    static final String FEED = "http://192.168.2.46:8099/feed.json";
+    static final String FEED = Config.SERVER + "/feed.json";   // Config.java é gerado do house.json pelo build.sh
     static final long EVERY = 2 * 60 * 1000L;   // Shield: card de luzes atualizado em até ~2 min
 
     @Override public void onReceive(Context ctx, Intent i) {

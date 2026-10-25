@@ -124,7 +124,7 @@ body.apps #orb, body.row0 #orb { opacity: .35; }
 </div>
 
 <script>
-const FEED = 'http://192.168.2.46:8099/feed.json?home=1';   // home própria: sem os cards extras do Projectivy
+const FEED = '__SERVER__/feed.json?home=1';   // home própria: sem os cards extras do Projectivy
 // dock fixo: banner do tema + o que abre (pacote, pacote/activity ou ação interna)
 // dock: o primeiro pacote instalado de cada item (o mesmo HTML serve o Fire TV do quarto e o Shield da sala)
 const DOCK_ALL = [
@@ -240,7 +240,7 @@ loadFeed(); setInterval(loadFeed, 30 * 1000);   // o feed é cache do servidor (
 <div id="warp"><canvas id="wc" width="1920" height="1080"></canvas><h1 id="wt">SALTO HIPERESPACIAL</h1><h2 id="ws"></h2></div>
 <script>
 // transmissão: frase viva do skippy-cards, digitada
-const QUIP = 'http://192.168.2.46:8099/api/quip?where=home';
+const QUIP = '__SERVER__/api/quip?where=home';
 let typing = null, lastQ = '';
 async function quip() {
   try { const q = await (await fetch(QUIP, {cache: 'no-store'})).json(); if (q.text === lastQ) return; lastQ = q.text;
@@ -278,7 +278,7 @@ document.addEventListener('keydown', ev => { if (warping) { ev.stopPropagation()
 </script>
 <script>
 // órbita do Plex: slides do /api/plex (agora, continuar, próximo, chegou, semana), troca a cada 9 s
-const SRV = 'http://192.168.2.46:8099';
+const SRV = '__SERVER__';
 let OS = [], oi = 0;
 function slides(v) {
   const s = [], ago = t => { const d = Math.floor((Date.now() / 1000 - (t || 0)) / 86400); return d < 1 ? 'hoje' : d < 2 ? 'ontem' : 'há ' + d + ' dias'; };

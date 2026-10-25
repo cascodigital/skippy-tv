@@ -1,79 +1,80 @@
-# AGENTS.md — adapting Skippy TV to another house
+# AGENTS.md — build Skippy TV for another house
 
-You are an AI coding agent asked to build "something like this" for a new user. This repo is a
-**working reference for one specific house**, not a turnkey installer: IPs, entity IDs, app lists,
-texts and the camera are hard-coded on purpose. Your job is to re-target it, not to run it as is.
+You are an AI coding agent (Claude Code, Codex, Cursor…) asked to give a user "something like this".
+This repo is a **working build for one real house**; the house is described in one file, `house.json`.
+Your job is to produce a new `house.json`, adjust taste where the user wants, build, deploy and **prove it works
+on the TV**. Read `docs/HOUSE.md` (the schema) and `docs/ARCHITECTURE.md` (how it works + every trap we measured)
+before writing anything.
 
-## 0. What you need before touching anything
+## 0. Preconditions — stop and tell the user if any is missing
 
-You must be able to run a shell on a machine **on the same LAN** as the TV box, with `adb`, `python3`,
-`ffmpeg`, `curl` and Docker (locally or on a server you can reach). If you only have a chat window, stop
-and tell the user what is missing.
+- You run a shell on a machine **on the same LAN** as the TV box, with `adb`, `python3`, `ffmpeg`, `curl`,
+  SSH to an always-on **Docker host**, and outbound internet (to fetch the JDK/build-tools once).
+- The user can sit in front of the TV for two minutes (accept the ADB prompt, look at the result).
+- Home Assistant reachable from the Docker host. Plex and a go2rtc camera are optional.
 
-Ask the user (or discover) and write down:
+If you only have a chat window, say so and stop: this is not doable without a shell on the LAN.
 
-| Item | How to get it |
-|---|---|
-| TV box model + OS | `adb shell getprop ro.product.model`, `ro.build.version.release` (Fire TV: `ro.build.mktg.fireos`) |
-| Network ADB enabled | Developer options → ADB/network debugging; the user must **accept the prompt on the TV** |
-| Docker host for the cards server | any always-on box on the LAN |
-| Home Assistant URL + long-lived token | HA profile → Security → Long-lived access tokens |
-| Which lights, which one dims | `GET /api/states` or `/api/template` with `area_name()`; dimmable = `brightness` in `supported_color_modes` |
-| Plex URL, token, machineIdentifier (optional) | `Preferences.xml` → `PlexOnlineToken`; `curl http://PLEX:32400/identity` |
-| Camera (optional) | an RTSP camera behind **go2rtc**; the stream must be H.264 |
-| Look and texts | node name/room, HUD texts, colors, which apps go in the dock |
+## 1. Ask the human only what you cannot discover
 
-Never commit tokens. They live in `cards/.env` on the Docker host (see `cards/.env.example`).
-The signing keystore lives outside the repo (`KEYSTORE`, `KEYSTORE_PASS_FILE`).
+Ask, in one message:
+1. TV box model(s) and the room of each. Ask them to enable *Developer options → Network/ADB debugging* and to
+   **accept the "Allow debugging" prompt on the TV** when you connect (`adb connect <ip>:5555`).
+2. A Home Assistant **long-lived access token** (Profile → Security). Plex token only if they want Plex cards
+   (`Preferences.xml` → `PlexOnlineToken`, or plex.tv). Never print tokens, never commit them.
+3. Which lights matter (3-5 groups) and which one should dim; whether there is a camera in go2rtc.
+4. Language and tone for the lines (the shipped ones are Brazilian Portuguese, sarcastic Skippy persona).
 
-## 1. Choose the path by OS version (this decides everything)
+## 2. Discover the rest yourself
 
-| Box | Path |
-|---|---|
-| Android TV / Google TV **10+** (Shield, Chromecast, most boxes) | Projectivy Launcher + `build-iconpack.sh` + cards via **Watch Next** (`Sync.java`) |
-| Android **8-9** | same, but check the Projectivy version that still installs; Watch Next works from 8 |
-| **Fire TV / Fire OS 6 (Android 7)** or anything where Projectivy will not install | custom launcher `Home.java` + `assets/home.html`; read the Fire TV section of `docs/ARCHITECTURE.md` first |
+```bash
+adb connect <tv-ip>:5555 && adb -s <tv-ip>:5555 shell getprop ro.product.model ro.build.version.release
+adb -s <tv-ip>:5555 shell getprop ro.build.mktg.fireos          # non-empty = Fire TV
+HASS_URL=http://<ha>:8123 HASS_TOKEN=<token> python3 tools/discover_ha.py > house.json   # read-only draft
+```
 
-Do not try to replace the Amazon home screen on Fire OS 6: accessibility services, `set-home-activity` and
-`pm disable-user` are all blocked (measured). The `Watch` service + a launcher icon is the ceiling there.
+Then edit `house.json`: resolve every `TODO`, keep only the lights the user wants, give each TV a fixed IP
+(DHCP reservation) and the right `media_player`. Check every entity exists: `GET /api/states/<entity>`.
 
-## 2. Files to change (search for these values)
+## 3. Pick the path by device (this decides what works)
 
-- `192.168.2.46` (cards server), `192.168.2.102` (go2rtc), `192.168.2.25` (Home Assistant),
-  `192.168.2.111` / `.140` (devices) — in `cards/`, `channel-app/src/`, `channel-app/assets/home.html`.
-- `cards/app.py`: `LIGHTS` (ids, names, entity_ids, which one has `dim`), the climate entities in
-  `card_status()`, `QUIPS` (personality lines), stream name `rua`.
-- `channel-app/assets/home.html`: `DOCK` (banner + package of each favourite), `HIDE`, `THEMED`.
-- `gen.py` → `APPS` (which banners to draw; logos from Simple Icons by slug); `build-iconpack.sh` → `C`
-  (package/activity → banner map). Get real activities with
-  `adb shell cmd package query-activities -a android.intent.action.MAIN -c android.intent.category.LEANBACK_LAUNCHER --brief`.
-- `anim.py` / `gen.py`: HUD texts (`HUD_NODE`), colors (`CYAN`, `NAVY`), planet, etc.
-- `channel-app/AndroidManifest.xml`: rename the package if this is a different product.
+| Device | What you get | Notes |
+|---|---|---|
+| Android TV / Google TV 8+ (Shield, Chromecast GTV, Mi Box…) | Skippy launcher as the **real home** (instant) | Android 11+: the manifest already has `<queries>`; set home with `cmd package set-home-activity dev.skippy.channel/.HomeAlias`. If another launcher has an accessibility service intercepting Home, turn it off. |
+| Fire TV (Fire OS 6/7) | Skippy launcher, Amazon home for ~5 s after Home, then Skippy | Amazon blocks replacing its home (measured: accessibility, set-home and disable all refused). Needs `appops set dev.skippy.channel GET_USAGE_STATS allow`. |
+| Android TV with Projectivy kept | Icon pack + cards in *Watch Next* | Lighter option, no live widgets. |
 
-## 3. Order of work (each step verified before the next)
+Both: `adb shell dumpsys deviceidle whitelist +dev.skippy.channel` (Doze cuts the app's network while the TV is off).
 
-1. Render assets (`gen.py`, `anim.py`) and **look at them** (open the PNG/first frame). Fix logos with bad bounding boxes.
-2. Cards server: `.env`, `docker compose up -d --build`, then `curl /feed.json` returns cards and the PNGs look right.
-3. App: `channel-app/build.sh`, install, `adb shell dumpsys deviceidle whitelist +<package>` (Doze kills its network
-   with the TV off — measured).
-4. Launcher (Projectivy path): wallpaper and icon pack via the `am start` lines in `docs/ARCHITECTURE.md`;
-   in Projectivy turn off *Custom icon color* and *Color override*, and leave only your app in Watch Next.
-5. Bridge panel: open it, confirm the camera time stamp **moves** and its latency against a real clock.
-6. Lights: test with the user in the room. Toggle one light, confirm the state in Home Assistant, put it back.
+## 4. Build and deploy, in this order, verifying each step
 
-## 4. Rules that cost us real mistakes
+1. **Assets**: `venv/bin/python -I gen.py $PWD` and `anim.py` (README → Build). Open the PNG and a video frame and
+   *look*. Change `HUD_NODE` per room. Add banners for the user's apps in `gen.py` → `APPS`.
+2. **Server**: create `.env` on the Docker host from `cards/.env.example` (chmod 600), then `./deploy-cards.sh <ssh-host> <dir>`.
+   Pass: it prints a non-empty card list; `curl <server>/api/quip` returns a line; `/api/lights` matches HA.
+3. **APK**: `channel-app/build.sh` (generates `Config.java` from `house.json`; signing key outside the repo,
+   `KEYSTORE`/`KEYSTORE_PASS_FILE`). Install with `adb install -r`, then the permissions from step 3.
+4. **On the TV** (the only proof that counts): `adb exec-out screencap -p` after each change and look at it.
+   The camera must **move** (compare two frames, or the on-screen clock against the real one); cards must open the
+   right Plex item; the Home button must land on Skippy (Fire TV: within ~5 s).
+5. **Lights**: test with the user watching. Toggle one group from the Bridge panel, confirm in HA, put it back.
 
-- **Never press OK/arrows on a light card while testing navigation.** We switched a living-room light off
-  by accident this way. Test navigation with screenshots only; test actions deliberately and restore state.
-- A screenshot is the source of truth for "does it look good". Take one after every visual change
-  (`adb exec-out screencap -p`), and compare two frames to prove video is moving.
-- "It compiled" is not "it works": verify on the device (activity in front, logcat, go2rtc consumers).
-- Measure before blaming: the camera clock vs the real clock, CPU with `top`, memory with `dumpsys meminfo`.
-- `d8` (build-tools 34) breaks on non-static inner/anonymous classes; use `--min-api` = the device API.
-- Amazon WebView: do not scale the page by `innerWidth` (it lies); the app sets the zoom.
+## 5. Rules that cost us real mistakes
 
-## 5. Done means
+- **Never press OK/arrows on a light while testing navigation** — we switched a living-room light off by accident.
+  Test navigation with screenshots; test light actions deliberately and restore state.
+- Do not wake or take over a TV someone is watching: check `dumpsys activity activities | grep mResumedActivity`
+  first. Installing the APK does not interrupt other apps; opening the Home does.
+- `adb` over Wi-Fi to Fire TVs drops to `offline` after bursts of commands; only a power cycle fixed it here.
+- "It compiled" is not "it works". "The service started" is not "Home works": test the real Home key.
+- Measure before blaming (CPU with `top`, camera latency against a clock, logcat). Hardware decode (`LiveCam`) is
+  why the camera works on weak boxes; WebRTC in a WebView did not.
+- `d8` from build-tools 34 crashes on non-static inner/anonymous classes; `--min-api` must be the device API.
+- Amazon's WebView lies about `innerWidth` and boosts text in wide blocks; the CSS/zoom fixes are in place, keep them.
 
-Home screen shows the animated wallpaper, themed banners and live cards; a card opens the right content;
-the Bridge panel shows the live camera in under ~1-2 s and the lights reflect Home Assistant; after a reboot
-it comes back by itself (on Fire TV: within ~1.5 min). Write down what you changed in a doc for the user.
+## 6. Done means
+
+Animated wallpaper; Skippy's line above the cards; live cards (climate, camera, lights, Plex); the round Plex
+widget; the Bridge panel with the live camera (< ~1-2 s) and working lights; Home lands on Skippy; it all comes
+back by itself after a reboot. Leave the user a short doc of what you changed and how to roll back
+(`set-home-activity` back to their old launcher).

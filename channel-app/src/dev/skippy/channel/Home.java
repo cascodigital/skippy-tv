@@ -174,7 +174,7 @@ public class Home extends Activity implements SurfaceHolder.Callback {
     void play() {
         if (!haveSurface || !resumed || mp != null) return;
         try {
-            AssetFileDescriptor fd = getAssets().openFd(FIRE ? "wallpaper-quarto.mp4" : "wallpaper-sala.mp4");
+            AssetFileDescriptor fd = getAssets().openFd(FIRE ? "wallpaper-fire.mp4" : "wallpaper-tv.mp4");
             mp = new MediaPlayer();
             mp.setDataSource(fd.getFileDescriptor(), fd.getStartOffset(), fd.getLength());
             fd.close();

@@ -1,0 +1,47 @@
+{
+  "_doc": "Tudo que é específico desta casa. Tokens NÃO entram aqui (vão no cards/.env). Esquema e significado de cada campo: docs/HOUSE.md. Para outra casa: rode tools/discover_ha.py e edite.",
+  "server": {
+    "public_url": "http://192.168.2.46:8099"
+  },
+  "hass": {
+    "url": "http://192.168.2.25:8123"
+  },
+  "plex": {
+    "url": "http://192.168.2.46:32400",
+    "machine_id": "97d420b4844bfe2624cf9c84a060dc81fe935395"
+  },
+  "camera": {
+    "go2rtc": "http://192.168.2.102:1984",
+    "stream": "rua",
+    "label": "PÁTIO",
+    "title": "Câmera do pátio",
+    "motion_entity": "binary_sensor.tapo_c206_motion_alarm",
+    "windy_per_hour": 15
+  },
+  "door": {
+    "entity": "binary_sensor.door_sensor_2_door",
+    "room": "sala"
+  },
+  "climate": {
+    "label": "SALA",
+    "indoor_temp": "sensor.sala_temperatura",
+    "indoor_hum": "sensor.sala_umidade",
+    "outdoor_temp": "sensor.0xa4c13822447901eb_temperature",
+    "outdoor_hum": "sensor.0xa4c13822447901eb_humidity",
+    "weather": "weather.forecast_home",
+    "is_night": "binary_sensor.e_noite"
+  },
+  "lights": [
+    {"id": "sala", "name": "Sala", "entities": ["light.luz_da_sala"], "dimmable": true},
+    {"id": "quarto", "name": "Quarto", "entities": ["light.luz_quarto"]},
+    {"id": "cozinha", "name": "Cozinha", "entities": ["light.luz_da_porta", "light.luz_da_pia", "light.luz_freezer"]},
+    {"id": "rua", "name": "Rua", "entities": ["light.luzes_do_patio"], "outdoor": true}
+  ],
+  "devices": [
+    {"ip": "192.168.2.111", "room": "sala", "bridge": "BRIDGE 01", "label": "SALA", "media_player": "media_player.android_tv_2", "wallpaper": "dist/out/wallpaper-anim.mp4"},
+    {"ip": "192.168.2.140", "room": "quarto", "bridge": "BRIDGE 02", "label": "QUARTO", "media_player": "media_player.borboleta_2", "wallpaper": "dist/out/wallpaper-anim-quarto.mp4", "fire_tv": true}
+  ],
+  "extras": {
+    "laptop_open": "input_boolean.ilatitude"
+  }
+}

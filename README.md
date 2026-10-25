@@ -102,21 +102,34 @@ and what happened is very welcome.
 
 ## Want one for your house? Ask an AI agent
 
-This is a reference build for one specific house, not an installer. Give an AI coding agent with shell and
-`adb` access on your LAN (Claude Code, Codex, Cursor…) this repo and a prompt like:
+The code is generic; **the house is one file**, [`house.json`](house.json) (Home Assistant entities, lights,
+camera, Plex, the TV boxes and their rooms — no secrets). An AI coding agent with a shell and `adb` on your LAN
+(Claude Code, Codex, Cursor…) can rebuild it for you. Paste this:
 
-> Read https://github.com/cascodigital/skippy-tv, starting with `AGENTS.md`. Build the same kind of
-> home screen for my TV box (model: ___). My Home Assistant is at ___; I want these lights: ___ (this one
-> dims: ___). Camera via go2rtc at ___ (or none). Plex at ___ (or none). Docker host: ___. Ask me for
-> anything missing, never commit tokens, and show me a screenshot after every visual step.
+> Read https://github.com/cascodigital/skippy-tv, starting with `AGENTS.md`, then `docs/HOUSE.md`.
+> Build the same home screen for my TV box (model: ___, room: ___). My Home Assistant is at ___ (I will give you
+> a token). Run `tools/discover_ha.py` to draft my `house.json`, then ask me which lights I want and which one dims.
+> Camera via go2rtc at ___ (or none). Plex at ___ (or none). Docker host: ___. Never commit tokens, never touch a
+> light without telling me, and show me a TV screenshot after every visual step.
 
-`AGENTS.md` tells the agent which path fits the device (Projectivy on Android TV 10+, custom launcher on
-Fire OS / older Android), what to change, in which order, and the traps we already measured.
+What the agent gets:
+- [`AGENTS.md`](AGENTS.md) — the runbook: what to ask the human, what to discover, which path fits the device
+  (real home on Android TV, the ~5 s workaround on Fire TV), build/deploy order and the pass criteria for each step.
+- [`tools/discover_ha.py`](tools/discover_ha.py) — read-only scan of a Home Assistant that drafts `house.json`
+  (lights per area, which ones dim, temperature/humidity indoor vs outdoor, door, motion, weather) and explains
+  every guess.
+- [`docs/HOUSE.md`](docs/HOUSE.md) — the schema, and the few things that are taste rather than wiring
+  (Skippy's lines, the dock, the banners).
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — how it all works and every device trap we measured.
 
 ## Pieces
 
 ```
 .
+├── house.json          everything that belongs to this house (schema: docs/HOUSE.md)
+├── AGENTS.md           runbook for an AI agent rebuilding this for another house
+├── tools/discover_ha.py  drafts a house.json from any Home Assistant (read-only)
+├── deploy-cards.sh     ships the cards server to the Docker host and smoke-tests it
 ├── gen.py              static wallpaper + 640x360 neon banners (Simple Icons → cyan glow HUD frame)
 ├── anim.py             animated wallpaper: raw RGB frames → ffmpeg (parallax stars, drifting nebula, radar, shooting star)
 ├── build-iconpack.sh   "Skippy Icon Pack" APK (ADW icon-pack format, no code) for Projectivy
@@ -160,17 +173,13 @@ Everything generated goes to `dist/` (git-ignored).
 ## Deploy
 
 ```bash
-# cards server (on the Docker host 192.168.2.46)
-scp cards/{app.py,quips.py,ponte.html,Dockerfile,docker-compose.yml,wallpaper.jpg} h46:/dados/dockers/skippy-cards/
-scp -r fonts h46:/dados/dockers/skippy-cards/
-ssh h46 'cd /dados/dockers/skippy-cards && docker compose up -d --build'
-# .env on the host only: PLEX_TOKEN, PLEX_MID, HASS_TOKEN, HASS_URL, PLEX_URL, PUBLIC_URL (see cards/.env.example)
+./deploy-cards.sh h46 /dados/dockers/skippy-cards      # cards server: copies code + house.json, rebuilds, smoke-tests
+# the .env with HASS_TOKEN / PLEX_TOKEN lives only on the host (see cards/.env.example)
 
-# devices
-adb -s 192.168.2.111:5555 install -r dist/skippy-channel.apk dist/skippy-iconpack.apk   # Shield
-adb -s 192.168.2.140:5555 install -r dist/skippy-channel.apk                            # Fire TV
-adb -s <device> shell dumpsys deviceidle whitelist +dev.skippy.channel                  # both: Doze would cut its network
-adb -s 192.168.2.140:5555 shell appops set dev.skippy.channel GET_USAGE_STATS allow      # Fire TV only (Watch)
+adb -s <tv>:5555 install -r dist/skippy-channel.apk
+adb -s <tv>:5555 shell dumpsys deviceidle whitelist +dev.skippy.channel             # Doze would cut its network
+adb -s <android-tv>:5555 shell cmd package set-home-activity dev.skippy.channel/.HomeAlias   # Android TV: real home
+adb -s <fire-tv>:5555 shell appops set dev.skippy.channel GET_USAGE_STATS allow      # Fire TV: Home watcher
 ```
 
 ## Security notes

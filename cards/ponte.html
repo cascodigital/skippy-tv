@@ -171,7 +171,7 @@ header, #lights, footer { transition: opacity .3s; }
 <div id="bg"></div><div id="veil"></div>
 
 <header>
-  <div class="brand"><b>SKIPPY // PONTE DE COMANDO</b><span id="node">BRIDGE 01 · SALA · NODE 192.168.2.111</span></div>
+  <div class="brand"><b>SKIPPY // PONTE DE COMANDO</b><span id="node">BRIDGE</span></div>
   <div class="clock"><b id="hh">--:--</b><span id="dd"></span></div>
 </header>
 
@@ -197,8 +197,11 @@ header, #lights, footer { transition: opacity .3s; }
 <div id="scan"></div><div id="sweep"></div>
 
 <script type="module">
-const GO2RTC = 'http://192.168.2.102:1984';
-if (new URLSearchParams(location.search).get('node') === 'quarto') document.getElementById('node').textContent = 'BRIDGE 02 · QUARTO · NODE 192.168.2.140';
+// configuração da casa, injetada pelo servidor a partir do house.json (go2rtc, stream, cômodo de quem abriu)
+const CFG = Object.assign({go2rtc: 'http://' + location.hostname + ':1984', stream: 'rua', cam_label: 'RUA', node: ''}, /*__CFG__*/{});
+const GO2RTC = CFG.go2rtc;
+if (CFG.node) document.getElementById('node').textContent = CFG.node;
+document.querySelector('#cam .chip').innerHTML = '<i></i>AO VIVO // ' + CFG.cam_label;
 const SVG = `<svg viewBox="0 0 72 72"><g class="rays"><path d="M36 4v8M10 14l6 6M62 14l-6 6M4 38h8M60 38h8"/></g>
   <path d="M24 46c-4-4-7-8-7-15a19 19 0 0 1 38 0c0 7-3 11-7 15-2 2-3 4-3 7H27c0-3-1-5-3-7z"/><path d="M28 60h16M30 66h12"/></svg>`;
 
@@ -288,7 +291,7 @@ if (NATIVE) {
 function iframeCam() {
   // player do go2rtc em iframe (o ws do go2rtc só aceita a própria origem)
   const f = document.createElement('iframe');
-  f.src = GO2RTC + '/stream.html?src=rua&mode=webrtc';
+  f.src = GO2RTC + '/stream.html?src=' + encodeURIComponent(CFG.stream) + '&mode=webrtc';
   f.allow = 'autoplay'; f.tabIndex = -1;
   f.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;background:#000;pointer-events:none';
   f.onload = () => setTimeout(camReady, 1500);

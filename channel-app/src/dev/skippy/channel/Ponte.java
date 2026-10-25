@@ -23,10 +23,10 @@ import android.widget.FrameLayout;
 // A página diz onde o vídeo fica via Skippy.video(x, y, w, h) em frações da tela.
 public class Ponte extends Activity implements SurfaceHolder.Callback, LiveCam.Listener {
     static final String TAG = "SkippyPonte";
-    static final String URL = "http://192.168.2.46:8099/ponte";
+    static final String URL = Config.SERVER + "/ponte";
     // MPEG-TS contínuo do go2rtc, demux próprio. MediaPlayer no Shield: RTSP derruba o NuPlayer (crash nativo),
     // HLS fMP4 dá -1004 e TS funciona mas com ~7 s de atraso fixo (25/10/2026).
-    static final String CAM = "http://192.168.2.102:1984/api/stream.ts?src=rua&video=h264";
+    static final String CAM = Config.CAM_TS;
     static final int MAX_FAIL = 3;
     int fails;
     final Handler ui = new Handler(Looper.getMainLooper());
@@ -65,8 +65,7 @@ public class Ponte extends Activity implements SurfaceHolder.Callback, LiveCam.L
         setContentView(root);
 
         String focus = getIntent().getStringExtra("focus");
-        boolean fire = android.os.Build.MODEL.startsWith("AFT");   // Fire TV do quarto
-        web.loadUrl(URL + "?native=1&node=" + (fire ? "quarto" : "sala") + (focus != null ? "&focus=" + focus : ""));
+        web.loadUrl(URL + "?native=1" + (focus != null ? "&focus=" + focus : ""));   // o servidor sabe o cômodo pelo IP
         web.requestFocus();
     }
 
