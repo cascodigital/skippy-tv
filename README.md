@@ -5,7 +5,7 @@
 **A sci-fi starship-bridge home screen for Android TV — wired to a real house.**
 
 Animated space wallpaper · neon app banners · live Plex and Home Assistant cards ·
-a live street camera at ~1 s latency · house lights with dimmer · an AI with an attitude problem.
+a live patio camera at ~1 s latency · house lights with dimmer · an AI with an attitude problem.
 
 ![Android TV](https://img.shields.io/badge/Android%20TV-7.1%2B-3DDC84?logo=android&logoColor=white)
 ![Fire TV](https://img.shields.io/badge/Fire%20TV-Fire%20OS%206-FF9900?logo=amazon&logoColor=white)
@@ -37,13 +37,13 @@ a live street camera at ~1 s latency · house lights with dimmer · an AI with a
 ## Skippy talks (on screen, never out loud)
 
 Skippy is the Elder AI from *Expeditionary Force*: brilliant, arrogant, stuck in a TV box. Every 15 s he reads
-the house — Home Assistant, the street camera's motion history, Plex, the clock — and picks a line:
+the house — Home Assistant, the patio camera's motion history, Plex, the clock — and picks a line — and knows which room is watching (living-room Shield or bedroom Fire TV):
 
 > *"27 motion alarms in the last hour. Either a very indecisive burglar, or the wind."* &nbsp;·&nbsp;
 > *"Living-room door open for 27 min. Is that an invitation or did you forget, monkey?"* &nbsp;·&nbsp;
 > *"Kitchen lights on at 3 am. I know what you are about to do. So does the fridge."*
 
-Red frame for alerts (real street motion, door left open), gold for rare and dated lines (11:11, 13:37, Christmas,
+Red frame for alerts (real motion at the gate, door left open), gold for rare and dated lines (11:11, 13:37, Christmas,
 Friday the 13th, a 1-in-120 legendary). Windy days don't count: the palm tree triggers the camera 30 times an hour,
 so Skippy keeps score instead — *"Last hour: palm tree 28, burglars 0."* (Lines are in Brazilian Portuguese.)
 
@@ -59,8 +59,8 @@ None of them touch the house: the planetary takeover is cancelled because *"the 
 
 | Device | Status | How it is themed |
 |---|---|---|
-| **NVIDIA Shield TV, 1st gen** (2015, Tegra X1) — Android TV 11 | ✅ tested daily | [Projectivy Launcher](https://play.google.com/store/apps/details?id=com.spocky.projengmenu) + the Skippy icon pack + cards in Android TV *Watch Next* |
-| **Amazon Fire TV Stick 4K, 1st gen** (AFTMM) — Fire OS 6 / Android 7.1 | ✅ tested daily | Custom launcher (`Home` activity) — Projectivy needs Android 10 |
+| **NVIDIA Shield TV, 1st gen** (2015, Tegra X1) — Android TV 11 — living room | ✅ tested daily | [Projectivy Launcher](https://play.google.com/store/apps/details?id=com.spocky.projengmenu) + the Skippy icon pack + cards in Android TV *Watch Next*; Skippy's line is the first card |
+| **Amazon Fire TV Stick 4K, 1st gen** (AFTMM) — Fire OS 6 / Android 7.1 — bedroom | ✅ tested daily | Custom launcher (`Home` activity) — Projectivy needs Android 10 |
 | Any other Android TV / Google TV (Chromecast with Google TV, Mi Box, TCL, Philips…) | ⚠️ should work, not tested | Android TV 10+: the Shield path. Older Android or Fire OS: the Fire TV path |
 
 The whole thing is plain Android APIs (Watch Next, `MediaCodec`, `WebView`), a small Python server and

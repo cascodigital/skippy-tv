@@ -187,7 +187,9 @@ def ctx():
             print('ctx', e, flush=True)
     return _ctx['c']
 
-def quip(where):
+NODES = {'192.168.2.111': 'sala', '192.168.2.140': 'quarto'}   # quem pede define o cômodo das frases
+
+def quip(where, node=None):
     try:   # teste de layout: echo "frase" > data/force_quip.txt (apagar depois)
         t = open('/data/force_quip.txt').read().strip()
         if t: return {'text': t, 'mood': 'normal', 'where': where}
@@ -195,7 +197,30 @@ def quip(where):
         pass
     c = ctx()
     if not c: return {'text': 'Sem contato com a casa. Ou ela me ignora, ou o Home Assistant caiu.', 'mood': 'alerta', 'where': where}
-    return quips.pick(c, where)
+    return quips.pick(c, where, node)
+
+def card_quote(q):
+    wall = Image.open(WALL).convert('RGB')
+    bg = wall.crop((300, 500, 300 + 2200, 500 + 1238)).resize((W, H), Image.LANCZOS).convert('RGBA')
+    bg.alpha_composite(Image.new('RGBA', (W, H), NAVY + (150,)))
+    col = MOOD.get(q['mood'], CYAN)
+    im = frame(bg, {'alerta': 'ALERTA // SKIPPY', 'rara': 'RARA // SKIPPY'}.get(q['mood'], 'SKIPPY DIZ'), col)
+    d = dr(im)
+    glow_text(im, (40, 50), '“', RAJB(200), fill=col + (255,), glow=col, r=14)
+    txt = q['text']
+    for size in (52, 46, 40, 35, 31):
+        f = RAJB(size); lines, cur = [], ''
+        for w_ in txt.split():
+            if d.textlength((cur + ' ' + w_).strip(), font=f) > 800 and cur: lines.append(cur); cur = w_
+            else: cur = (cur + ' ' + w_).strip()
+        lines.append(cur)
+        if len(lines) * (size + 10) <= 300: break
+    lh = f.size + 10; y0 = 120 + (300 - lh * len(lines)) // 2
+    tcol = (255, 225, 228, 255) if q['mood'] == 'alerta' else (255, 236, 190, 255) if q['mood'] == 'rara' else (235, 250, 255, 255)
+    for i, ln in enumerate(lines):
+        glow_text(im, (90, y0 + i * lh), ln, f, fill=tcol, glow=col, r=5)
+    d.text((90, H - 70), 'SKIPPY  //  ELDER AI  //  BRIDGE 01', font=ORB(18), fill=col + (190,))
+    return im
 
 def card_status():
     q = quip('card')
@@ -203,7 +228,7 @@ def card_status():
     bg = wall.crop((1500, 60, 1500 + 2200, 60 + 1238)).resize((W, H), Image.LANCZOS).convert('RGBA')
     bg.alpha_composite(Image.new('RGBA', (W, H), NAVY + (120,)))
     col = MOOD.get(q['mood'], CYAN)
-    im = frame(bg, {'alerta': 'ALERTA // SKIPPY', 'rara': '★ RARA // SKIPPY'}.get(q['mood'], 'PONTE // SALA'), col)
+    im = frame(bg, {'alerta': 'ALERTA // SKIPPY', 'rara': 'RARA // SKIPPY'}.get(q['mood'], 'PONTE // SALA'), col)
     d = dr(im)
     t = hass('sensor.sala_temperatura')['state']; u = hass('sensor.sala_umidade')['state']
     tr = hass('sensor.0xa4c13822447901eb_temperature')['state']; ur = hass('sensor.0xa4c13822447901eb_humidity')['state']
@@ -292,18 +317,18 @@ def card_camera():
     mm = c.get('motion_min')
     m1 = c.get('motion_1h') or 0
     mov = (c.get('motion_on') or (mm is not None and mm < 3)) and m1 < 15   # com ventania não é alerta (ver quips.py)
-    im = frame(bg, 'MOVIMENTO // RUA' if mov else 'AO VIVO // RUA', MOOD['alerta'] if mov else None)
+    im = frame(bg, 'MOVIMENTO // PÁTIO' if mov else 'AO VIVO // PÁTIO', MOOD['alerta'] if mov else None)
     d = dr(im)
     d.ellipse([W - 92, 34, W - 66, 60], fill=(255, 70, 70, 255))
     if mov:
         d.rectangle([0, 92, W, 150], fill=(160, 20, 30, 190))
-        d.text((58, 100), 'MOVIMENTO NA RUA ' + ('AGORA' if c.get('motion_on') or mm < 1 else f'HÁ {int(mm)} MIN'), font=ORB(30), fill=(255, 235, 235, 255))
+        d.text((58, 100), 'MOVIMENTO NO PÁTIO ' + ('AGORA' if c.get('motion_on') or mm < 1 else f'HÁ {int(mm)} MIN'), font=ORB(30), fill=(255, 235, 235, 255))
     elif mm is not None:
         lab = f'último movimento {quips._min(mm)}' + (f' · {m1}/h' if m1 else '')
         f_ = RAJ(26); tw = d.textlength(lab, font=f_)
         d.rounded_rectangle([W - 60 - tw - 24, 86, W - 60, 126], 8, fill=NAVY + (200,))
         d.text((W - 60 - tw - 12, 89), lab, font=f_, fill=(200, 230, 255, 235))
-    glow_text(im, (56, H - 170), 'CÂMERA DA RUA', RAJB(76), r=6)
+    glow_text(im, (56, H - 170), 'CÂMERA DO PÁTIO', RAJB(76), r=6)
     d.text((58, H - 88), 'OK para abrir ao vivo // ' + __import__('datetime').datetime.now(quips.TZ).strftime('%H:%M'), font=ORB(20), fill=CYAN + (230,))
     return im
 
@@ -352,7 +377,13 @@ def render():
     except Exception as e:
         print('status', e, flush=True)
     try:
-        cards.append({'id': 'camera', 'title': 'Câmera da rua', 'desc': 'Ao vivo · OK para abrir', 'img': save(card_camera(), 'camera'),
+        q = quip('card', 'sala')
+        state['quote_sala'] = {'id': 'quote', 'title': 'Skippy diz', 'desc': q['text'][:90], 'img': save(card_quote(q), 'quote'),
+                               'intent': ponte_intent('luzes')}
+    except Exception as e:
+        print('quote', e, flush=True)
+    try:
+        cards.append({'id': 'camera', 'title': 'Câmera do pátio', 'desc': 'Ao vivo · OK para abrir', 'img': save(card_camera(), 'camera'),
                       'intent': ponte_intent('camera')})
     except Exception as e:
         print('camera', e, flush=True)
@@ -417,7 +448,10 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         p = self.path.split('?')[0]
         if p == '/feed.json':
-            body = json.dumps(feed(), ensure_ascii=False).encode(); ct = 'application/json'
+            f = feed(); node = NODES.get(self.client_address[0])
+            if node == 'sala' and state.get('quote_sala'):
+                f = dict(f, cards=[state['quote_sala']] + f['cards'])
+            body = json.dumps(f, ensure_ascii=False).encode(); ct = 'application/json'
         elif p.startswith('/c/') and '/' not in p[3:] and os.path.exists(OUT + '/' + p[3:]):
             body = open(OUT + '/' + p[3:], 'rb').read(); ct = 'image/png'
         elif p == '/health':
@@ -433,7 +467,8 @@ class Handler(BaseHTTPRequestHandler):
             body = get(f'{GO2RTC}/video-rtc.js'); ct = 'text/javascript'
         elif p == '/api/quip':
             q = urllib.parse.parse_qs(self.path.split('?', 1)[1] if '?' in self.path else '')
-            body = json.dumps(quip(q.get('where', ['ponte'])[0]), ensure_ascii=False).encode(); ct = 'application/json'
+            node = q.get('node', [None])[0] or NODES.get(self.client_address[0])
+            body = json.dumps(quip(q.get('where', ['ponte'])[0], node), ensure_ascii=False).encode(); ct = 'application/json'
         elif p == '/api/lights':
             body = json.dumps(lights_state()).encode(); ct = 'application/json'
         else:

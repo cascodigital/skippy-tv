@@ -7,7 +7,7 @@ Everything below was measured on the real devices on 2026-10-25, not assumed.
 | Host | Role |
 |---|---|
 | `192.168.2.46` (Orange Pi 5, Docker) | `skippy-cards` container, port 8099. Plex Media Server on 32400. |
-| `192.168.2.102` (OptiPlex) | `go2rtc` for the street camera (Tapo C206), stream `rua`, API/UI on 1984. |
+| `192.168.2.102` (OptiPlex) | `go2rtc` for the patio camera (Tapo C206 facing the gate), stream `rua`, API/UI on 1984. |
 | `192.168.2.25` | Home Assistant. |
 | `192.168.2.111` | NVIDIA Shield, living room. |
 | `192.168.2.140` | Fire TV Stick 4K (AFTMM), bedroom. |
@@ -110,13 +110,13 @@ card (◀▶, 10 % steps), ◀ on any light goes to the camera, OK on the camera
 
 ## Skippy's mouth (screen only, never sound)
 
-`cards/quips.py` reads the house every 15 s (all Home Assistant states, one hour of street-motion history,
+`cards/quips.py` reads the house every 15 s (all Home Assistant states, one hour of patio-camera motion history,
 Plex sessions, the clock) and turns it into one-liners with a priority. `GET /api/quip` returns
 `{text, mood}` (`normal` cyan, `alerta` red, `rara` gold). Used by the Bridge panel ("TRANSMISSÃO",
 typed letter by letter every 20 s), the Fire TV home (line above the cards, every 30 s) and the
 "Ponte // Sala" card (its frame turns red/gold with the mood).
 
-- Priority bands: live street motion (100, but only if it is not a windy day — the Tapo fires 30+ times
+- Priority bands: live motion at the gate (100, but only if it is not a windy day — the Tapo fires 30+ times
   an hour when the palm tree moves, so then it jokes about the palm tree instead), date eggs (90-95),
   door open > 20 min (85), Plex playing/paused (80), 1-5 am (75), lights/climate/weekday (40-65),
   personality lines (10). Below 85 it mixes the hottest topic, another real fact and personality, and
@@ -124,6 +124,19 @@ typed letter by letter every 20 s), the Fire TV home (line above the cards, ever
 - `binary_sensor.tapo_c206_person_detection` sticks at `on` (measured): the code uses `motion_alarm`.
 - The cards loop re-renders right away when motion or the door changes (checked every 20 s), not only
   every 4 min. The camera card gets a red "MOVIMENTO NA RUA" strip, or a "último movimento há N min" tag.
+
+### Which room is watching
+The server maps the requesting IP to a room (`NODES` in `cards/app.py`: `.111` = living room / Shield,
+`.140` = bedroom / Fire TV), so `/api/quip` and `/feed.json` know who is asking. Room lines: bedtime jokes in
+the bedroom after 23 h, "you are in the bedroom and the living-room light is on", dimmer hints in the living room.
+The Shield home is Projectivy (no free text), so the living room gets an extra first card, **"Skippy diz"**,
+with the line in large type (`card_quote`); the Fire TV home shows the line as text above the cards.
+
+### Refresh times
+The cards loop checks motion, the door and the four lights every 20 s and re-renders right away when any
+changes; otherwise every 4 min. The Fire TV home polls `/feed.json` every 30 s (served from cache) and on every
+return to Home; the Shield app syncs Watch Next every 2 min (`setRepeating`). Typical: a light switched by hand
+shows up in ~20-40 s on the Fire TV and within ~2 min on the Shield.
 
 ### Easter eggs
 - **Konami code** (↑↑↓↓←→←→) on the Bridge panel: *Protocolo Elder* — red alarm, fake planetary takeover

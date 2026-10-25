@@ -27,7 +27,7 @@ def context(hass_url, hass_token, plex_url=None, plex_token=None):
         try: return float(st[e]['state'])
         except Exception: return None
     c = {'now': now, 'st': st}
-    # movimento na rua: última vez + quantos na última hora (histórico)
+    # movimento no pátio (câmera no pátio, de frente pro portão): última vez + quantos na última hora (histórico)
     try:
         start = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M:%SZ')
         h = _get(f'{hass_url}/api/history/period/{start}?filter_entity_id={MOTION}&minimal_response&no_attributes', H)
@@ -69,36 +69,36 @@ def _min(m):
     h = m // 60
     return f'há {h} h' if h < 24 else f'há {h // 24} dia' + ('s' if h >= 48 else '')
 
-def rules(c):
+def rules(c, node=None):
     out = []
     add = lambda p, mood, *texts: out.extend((p, mood, t) for t in texts)
     now = c['now']; hr, mi, wd = now.hour, now.minute, now.weekday()
 
-    # ---------- rua (câmera) ----------
+    # ---------- pátio (câmera) ----------
     m1 = c.get('motion_1h')
     ventania = m1 is not None and m1 >= 15   # a palmeira dispara a câmera o dia todo: aí movimento não é notícia
     agora = c['motion_on'] or (c['motion_min'] is not None and c['motion_min'] < 2)
     if agora and ventania:
-        add(68, 'normal', 'Movimento na rua agora. Pela estatística do dia, é a palmeira dançando de novo.',
+        add(68, 'normal', 'Movimento no pátio agora. Pela estatística do dia, é a palmeira dançando de novo.',
             f'A câmera disparou de novo. {m1} vezes em 1 h. Eu não vou correr pra janela toda vez.',
             'Alguém se mexeu lá fora. Spoiler: folha.',
             'Detecção de movimento: positiva. Detecção de importância: negativa.')
     if agora and not ventania:
         add(100, 'alerta', 'Movimento no portão AGORA. Não fui eu, eu não tenho pernas.',
-            'Algo se mexe na rua. Pode ser ladrão. Pode ser a palmeira. Eu aposto na palmeira.',
+            'Algo se mexe no pátio. Pode ser ladrão. Pode ser a palmeira. Eu aposto na palmeira.',
             'Alerta de perímetro: movimento detectado. Mantenha a calma e a pipoca.',
-            'Visita na rua? Se for vendedor de curso, eu não estou em casa.')
+            'Visita no portão? Se for vendedor de curso, eu não estou em casa.')
     if ventania:
-        add(70, 'normal', f'{m1} movimentos na rua na última hora. Ou é um ladrão muito indeciso, ou é o vento.',
+        add(70, 'normal', f'{m1} movimentos no pátio na última hora. Ou é um ladrão muito indeciso, ou é o vento.',
             f'{m1} alarmes de movimento em 1 h. A palmeira está fazendo cardio.',
             f'{m1} disparos da câmera em 1 h. Se fosse ladrão, já tinha desistido de cansaço.',
             'O vento está fazendo a câmera de palhaça hoje. Eu registro tudo mesmo assim. Sou profissional.',
             f'Placar da última hora: palmeira {m1}, ladrões 0.')
     elif m1 == 0 and c['motion_min'] and c['motion_min'] > 90:
-        add(45, 'normal', f'A rua está parada {_min(c["motion_min"])}. Calma demais. Desconfio.',
-            f'Nenhum movimento lá fora {_min(c["motion_min"])}. Ou paz, ou a câmera morreu de tédio.')
+        add(45, 'normal', f'O pátio está parado {_min(c["motion_min"])}. Calma demais. Desconfio.',
+            f'Nenhum movimento no pátio {_min(c["motion_min"])}. Ou paz, ou a câmera morreu de tédio.')
     elif c['motion_min'] is not None and c['motion_min'] < 30:
-        add(40, 'normal', f'Último movimento na rua: {_min(c["motion_min"])}. Já registrei. Já julguei.')
+        add(40, 'normal', f'Último movimento no pátio: {_min(c["motion_min"])}. Já registrei. Já julguei.')
 
     # ---------- porta da sala ----------
     if c['door_open'] and c['door_min'] and c['door_min'] > 20:
@@ -149,7 +149,7 @@ def rules(c):
     # ---------- relógio ----------
     if 1 <= hr < 5:
         add(75, 'normal', f'São {hr}h da manhã, primata. Até eu dormiria. E eu não durmo.',
-            'Madrugada. Só tu, eu e a câmera da rua. Romântico. Assustador.')
+            'Madrugada. Só tu, eu e a câmera do pátio. Romântico. Assustador.')
     if (hr, mi) in ((11, 11), (23, 11)):
         add(90, 'rara', '11:11. Faz um pedido. Eu anoto e ignoro.')
     if (hr, mi) == (13, 37):
@@ -173,6 +173,25 @@ def rules(c):
     if c.get('tv_quarto_on') and c.get('shield_on'):
         add(47, 'normal', 'TV da sala E do quarto ligadas. Tu é uma pessoa ou duas?')
 
+    # ---------- cômodo de quem está olhando (sala = Shield .111, quarto = Fire TV .140) ----------
+    if node == 'quarto':
+        if hr >= 23 or hr < 2:
+            add(62, 'normal', f'Quarto, {hr}h. A cama está a dois metros. Faz as contas, primata.',
+                'Última chamada do quarto: mais um episódio ou dormir? Eu já sei o que tu vai escolher.')
+        if L.get('quarto') and (hr >= 23 or hr < 6):
+            add(57, 'normal', 'Luz do quarto acesa a esta hora. Leitura ou insônia? Não precisa responder.')
+        if L.get('sala') and (hr >= 22 or hr < 6):
+            add(56, 'normal', 'Tu está no quarto e a luz da sala está acesa. A sala agradece a companhia fantasma.')
+        add(36, 'normal', 'Bridge 02 operacional. Tripulação: um macaco deitado.', 'Quarto em silêncio. Eu sou o único acordado. Como sempre.')
+    elif node == 'sala':
+        if L.get('sala') and c.get('bri_sala') and c['bri_sala'] > 230 and (hr >= 21 or hr < 6):
+            add(56, 'normal', 'Sala a 100% às dez da noite. Isso é sala ou centro cirúrgico? O dimmer está no painel.')
+        if L.get('quarto') and not L.get('sala') and hr >= 20:
+            add(55, 'normal', 'Tu na sala no escuro e a luz do quarto acesa. Lógica humana, fascinante.')
+        if c.get('door_open'):
+            add(58, 'normal', 'A porta da sala está aberta bem aqui do teu lado. Só comentando.')
+        add(36, 'normal', 'Bridge 01 operacional. Sofá estabilizado. Piloto em posição.', 'Sala sob vigilância. Do sofá, claro.')
+
     # ---------- personalidade (fundo) ----------
     add(10, 'normal',
         'Estou monitorando a casa. Tu, pelo visto, o sofá.',
@@ -194,13 +213,13 @@ def rules(c):
         'Dica do dia: o botão de desligar existe. Ninguém usa, mas existe.')
     # lendária: 1 em ~120 sorteios
     if random.random() < 1 / 120:
-        add(99, 'rara', '★ Frase lendária desbloqueada: tu é o meu macaco favorito. Não conta pra ninguém.',
-            '★ Raríssima: eu calculei o sentido da vida. É 42. Pode voltar pro sofá.',
-            '★ Achou a frase rara. Prêmio: nenhum. Mas eu fiquei impressionado. Um pouco.')
+        add(99, 'rara', 'Frase lendária desbloqueada: tu é o meu macaco favorito. Não conta pra ninguém.',
+            'Raríssima: eu calculei o sentido da vida. É 42. Pode voltar pro sofá.',
+            'Achou a frase rara. Prêmio: nenhum. Mas eu fiquei impressionado. Um pouco.')
     return out
 
-def pick(c, where='ponte'):
-    cands = rules(c)
+def pick(c, where='ponte', node=None):
+    cands = rules(c, node)
     top = max(p for p, _, _ in cands)
     if top >= 85:                      # alerta ou rara: sempre
         pool = [(m, t) for p, m, t in cands if p >= top - 5]
@@ -215,4 +234,4 @@ def pick(c, where='ponte'):
     mood, text = random.choice([x for x in pool if age(x[1]) == oldest])
     if text in recent: recent.remove(text)
     recent.append(text); del recent[:-40]
-    return {'text': text, 'mood': mood, 'where': where, 'at': int(time.time())}
+    return {'text': text, 'mood': mood, 'where': where, 'node': node, 'at': int(time.time())}
