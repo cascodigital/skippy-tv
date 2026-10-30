@@ -353,16 +353,21 @@ function dim(delta) {
   l.on = true; l.bri = dimV; draw();
   clearTimeout(dimT); dimT = setTimeout(() => { act(l.id, 'set', dimV); dimV = null; }, 450);
 }
+// navegador comum (TV Hisense): Voltar sai do painel; no app Android quem trata é o skippyBack
+const BACK = ['Escape', 'Backspace', 'GoBack', 'BrowserBack'];
+function leave() { if (history.length > 1) history.back(); else if (document.referrer) location.href = document.referrer; }
 document.addEventListener('keydown', ev => {
-  const k = ev.key, ids = stops(), onSlider = cur.endsWith(':dim');
+  const k = [461, 10009].includes(ev.keyCode) ? 'GoBack' : ev.key, ids = stops(), onSlider = cur.endsWith(':dim');
   lastKey = Date.now(); if (idleMode) { idleMode = false; lastQuip = ''; say('Ah, voltou. Achei que tinha virado móvel.', 'normal'); }
   if (elderOn) { ev.preventDefault(); return; }
   seq.push(k); seq = seq.slice(-8);
   if (seq.join() === KONAMI.join()) { seq = []; elder(); }
   if (document.body.classList.contains('full')) {
-    if (['Enter', 'Escape', 'Backspace', 'GoBack', 'BrowserBack'].includes(k)) { miraOff(); document.body.classList.remove('full'); ev.preventDefault(); }
+    if (!NATIVE && BACK.includes(k) && params.get('focus') === 'camera') { leave(); ev.preventDefault(); return; }
+    if (['Enter'].concat(BACK).includes(k)) { miraOff(); document.body.classList.remove('full'); ev.preventDefault(); }
     return;
   }
+  if (!NATIVE && BACK.includes(k)) { leave(); ev.preventDefault(); return; }
   if (cur === 'cam' && k === 'ArrowLeft') {
     lefts.push(Date.now()); lefts = lefts.filter(t => Date.now() - t < 1500);
     if (lefts.length >= 3) { lefts = []; mira(); }

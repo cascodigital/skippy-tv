@@ -11,7 +11,7 @@ HJ=${HOUSE_JSON:-$P/../house.json}
 read -r SERVER CAMTS WFIRE WTV < <(python3 - "$HJ" <<'PYH'
 import json, sys
 h = json.load(open(sys.argv[1])); c = h['camera']
-fire = next((d for d in h['devices'] if d.get('fire_tv')), None); tv = next((d for d in h['devices'] if not d.get('fire_tv')), fire)
+fire = next((d for d in h['devices'] if d.get('fire_tv')), None); tv = next((d for d in h['devices'] if not d.get('fire_tv') and not d.get('vidaa')), fire)
 print(h['server']['public_url'].rstrip('/'), f"{c['go2rtc'].rstrip('/')}/api/stream.ts?src={c['stream']}&video=h264",
       (fire or tv)['wallpaper'], (tv or fire)['wallpaper'])
 PYH

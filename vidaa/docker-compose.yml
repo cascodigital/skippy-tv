@@ -1,0 +1,22 @@
+# Exemplo para um host novo. Nesta casa os dois servicos rodam dentro da stack tv4k do dotpi
+# (tv4k-web e tv4k-bridge), mesma estrutura de pastas: ./app e ./bridge.
+services:
+  skippy-vidaa-web:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports: ["8780:80"]
+    volumes: ["./app:/usr/share/nginx/html:ro", "./nginx.conf:/etc/nginx/conf.d/default.conf:ro"]
+  skippy-vidaa-bridge:
+    image: python:3.12-alpine
+    restart: unless-stopped
+    working_dir: /app
+    command: ["python3", "-I", "-u", "tvbridge.py"]
+    environment:
+      TZ: America/Sao_Paulo
+      SIDEE_HOME: /app/sideehome
+      TV_HOST: 192.168.2.246                                # IP fixo da TV (reserva DHCP)
+      CARDS: http://192.168.2.46:8099                       # server.public_url
+      SKIPPY_URL: http://192.168.2.102:8780/skippy.html     # devices[].vidaa.web + /skippy.html
+      PORT: "8781"
+    ports: ["8781:8781"]
+    volumes: ["./bridge:/app"]

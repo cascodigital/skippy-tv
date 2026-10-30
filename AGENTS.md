@@ -42,6 +42,7 @@ Then edit `house.json`: resolve every `TODO`, keep only the lights the user want
 |---|---|---|
 | Android TV / Google TV 8+ (Shield, Chromecast GTV, Mi Box…) | Skippy launcher as the **real home** (instant) | Android 11+: the manifest already has `<queries>`; set home with `cmd package set-home-activity dev.skippy.channel/.HomeAlias`. If another launcher has an accessibility service intercepting Home, turn it off. |
 | Fire TV (Fire OS 6/7) | Skippy launcher, Amazon home for ~5 s after Home, then Skippy | Amazon blocks replacing its home (measured: accessibility, set-home and disable all refused). Needs `appops set dev.skippy.channel GET_USAGE_STATS allow`. |
+| Hisense/Toshiba VIDAA (not Android) | Same home as a web page behind a tile; bridge on the Docker host takes over VIDAA's home ~3-5 s after Home | No ADB/APK. Follow `docs/VIDAA.md` (Sidee pairing with an on-screen PIN, `vidaa/deploy.sh`). |
 | Android TV with Projectivy kept | Icon pack + cards in *Watch Next* | Lighter option, no live widgets. |
 
 Both: `adb shell dumpsys deviceidle whitelist +dev.skippy.channel` (Doze cuts the app's network while the TV is off).

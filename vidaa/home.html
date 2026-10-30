@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, initial-scale=1">
+<title>Skippy Home</title>
+<script>/* VIDAA: viewport 1280x720 (dpr 1.5); a pagina e desenhada em 1920x1080 */
+document.documentElement.style.zoom = (window.innerWidth || 1280) / 1920;</script>
+<style>
+@font-face { font-family: Orb; src: url(sk/Orbitron.ttf); }
+@font-face { font-family: Raj; src: url(sk/Rajdhani-SemiBold.ttf); font-weight: 600; }
+@font-face { font-family: Raj; src: url(sk/Rajdhani-Bold.ttf); font-weight: 700; }
+:root { --cyan: #5ce1ff; --cyan-d: rgba(92,225,255,.35); --navy: #050b14; --ink: #e6f8ff; --mute: #7d97b2; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: none; text-size-adjust: none; }   /* WebView da Amazon aumenta texto de bloco largo sozinho */
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: transparent; color: var(--ink); font-family: Raj, sans-serif; }
+
+/* fundo: video 4K vai pra camada de video do hardware (unico caminho 4K nativo no VIDAA); falhou = jpg */
+html { background: #050b14; }
+html.nobg { background: #050b14 url(sk/wallpaper.jpg) 0 0/1920px 1080px no-repeat; }
+#bg { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; z-index: 0; }
+#stage { z-index: 1; }
+#stage { position: absolute; left: 0; top: 0; width: 1920px; transition: transform .45s cubic-bezier(.2,.8,.2,1); }
+body.apps #stage { transform: translateY(-700px); }
+
+/* relógio */
+#clock { position: absolute; right: 96px; top: 58px; text-align: right; font-family: Orb; }
+#clock b { display: block; font-size: 64px; font-weight: 500; text-shadow: 0 0 24px var(--cyan-d); }
+#clock span { font-family: Raj; font-size: 24px; color: var(--mute); letter-spacing: 2px; }
+#net { margin-top: 6px; font-family: Orb; font-size: 15px; letter-spacing: 3px; color: var(--mute); }
+#net.ok::before { content: '● '; color: var(--cyan); }
+#net.off::before { content: '● '; color: #ff5060; }
+
+/* fileira de cards */
+#cards { position: absolute; left: 96px; top: 300px; height: 330px; width: 1728px; overflow: visible; }
+#cards .track { position: absolute; left: 0; top: 0; display: flex; gap: 30px; transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+.card { position: relative; width: 512px; height: 288px; flex: none; border-radius: 18px; overflow: hidden; background: #0a1626 center/cover;
+        box-shadow: 0 10px 30px rgba(0,0,0,.45); transition: transform .25s ease, box-shadow .25s ease; opacity: .92; }
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.focus.card { transform: scale(1.08); opacity: 1; box-shadow: 0 0 0 3px var(--cyan), 0 0 38px rgba(92,225,255,.55), 0 14px 40px rgba(0,0,0,.6); z-index: 2; }
+#cardinfo { position: absolute; left: 96px; top: 652px; height: 80px; }
+#cardinfo b { display: block; font-size: 40px; font-weight: 700; letter-spacing: .5px; text-shadow: 0 2px 12px #000; }
+#cardinfo span { font-size: 26px; color: #b9d3ea; text-shadow: 0 2px 10px #000; }
+#cards .empty { font-family: Orb; font-size: 20px; letter-spacing: 3px; color: var(--mute); padding: 120px 0 0 20px; }
+
+/* barra Ir para */
+#go { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; z-index: 50; display: none; background: rgba(2,6,14,.82); }
+#go.on { display: block; }
+#go div { position: absolute; left: 260px; right: 260px; top: 420px; font-family: Orb; font-size: 22px; letter-spacing: 4px; color: var(--cyan); }
+#go input { display: block; width: 100%; margin-top: 18px; padding: 22px 28px; font-family: Raj; font-weight: 600; font-size: 44px; color: var(--ink);
+            background: rgba(9,22,44,.9); border: 2px solid var(--cyan); border-radius: 16px; outline: 0; box-shadow: 0 0 40px rgba(92,225,255,.35); }
+#go p { margin-top: 16px; font-family: Raj; font-size: 24px; letter-spacing: 0; color: var(--mute); }
+
+/* dock */
+#dock { position: absolute; left: 96px; right: 96px; top: 800px; height: 167px; border-radius: 34px;
+        background: rgba(9,22,44,.58); border: 1px solid rgba(92,225,255,.18); box-shadow: inset 0 0 40px rgba(92,225,255,.06); }
+#dock .row { position: absolute; left: 0; right: 0; top: 35px; display: flex; gap: 16px; justify-content: center; }
+.app { position: relative; width: 172px; height: 97px; flex: none; border-radius: 14px; overflow: hidden; transition: transform .22s ease, box-shadow .22s ease; }
+.app img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.focus.app { transform: scale(1.12); box-shadow: 0 0 0 3px var(--cyan), 0 0 32px rgba(92,225,255,.6); z-index: 2; }
+
+/* todos os apps */
+#allwrap { position: absolute; left: 96px; top: 1130px; width: 1728px; }
+#allwrap h2 { font-family: Orb; font-size: 22px; letter-spacing: 4px; color: var(--cyan); font-weight: 500; margin-bottom: 28px; }
+#all { display: flex; flex-wrap: wrap; gap: 26px 22px; }
+.tile { position: relative; width: 240px; height: 135px; border-radius: 14px; overflow: hidden; transition: transform .22s ease, box-shadow .22s ease;
+        background: linear-gradient(160deg, rgba(14,30,52,.9), rgba(4,9,18,.92)); border: 1px solid rgba(92,225,255,.25); }
+.tile img.ban { width: 100%; height: 100%; object-fit: cover; }
+.tile img.ico { position: absolute; left: 50%; top: 18px; width: 64px; height: 64px; margin-left: -32px; }
+.tile span { position: absolute; left: 8px; right: 8px; bottom: 12px; text-align: center; font-family: Orb; font-size: 14px; letter-spacing: 1px;
+             color: var(--cyan); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.focus.tile { transform: scale(1.12); box-shadow: 0 0 0 3px var(--cyan), 0 0 32px rgba(92,225,255,.6); z-index: 2; }
+
+#hint { position: absolute; left: 0; right: 0; top: 1000px; text-align: center; font-family: Orb; font-size: 15px; letter-spacing: 4px; color: var(--mute); opacity: .8; }
+body.apps #hint { opacity: 0; }
+
+/* transmissão do Skippy na home */
+#tx { position: absolute; left: 96px; top: 196px; width: 1300px; font-family: Raj; font-weight: 600; font-size: 28px; line-height: 1.2; color: #cfe8fb;
+      text-shadow: 0 2px 12px #000; white-space: normal; word-wrap: break-word; max-height: 68px; overflow: hidden; }
+#tx b { font-family: Orb; font-weight: 500; font-size: 15px; letter-spacing: 4px; color: var(--cyan); margin-right: 14px; vertical-align: 4px; }
+#tx.alerta { color: #ffd2d6; } #tx.alerta b { color: #ff5560; } #tx.rara { color: #ffe6b0; } #tx.rara b { color: #ffc850; }
+#tx::after { content: '▌'; color: var(--cyan); animation: pisca .8s steps(2) infinite; }
+@keyframes pisca { 50% { opacity: 0; } }
+body.apps #tx { opacity: 0; }
+/* easter egg: hiperespaço (Konami) */
+#warp { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; z-index: 99;   /* fixed+inset usa a largura falsa do WebView da Amazon */ display: none; background: radial-gradient(circle, rgba(92,225,255,.25), #000 70%); }
+#warp.on { display: block; }
+#warp canvas { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+#warp h1 { position: absolute; top: 470px; width: 100%; text-align: center; font-family: Orb; font-size: 64px; letter-spacing: 12px; color: #e6f8ff;
+           text-shadow: 0 0 30px var(--cyan), 0 0 80px var(--cyan); }
+#warp h2 { position: absolute; top: 560px; width: 100%; text-align: center; font-family: Raj; font-size: 32px; color: #9fd8f0; }
+
+/* órbita do Plex: cápsula de vidro com pôster redondo, anel de progresso e slides */
+#orb { position: absolute; left: 1060px; top: 650px; width: 764px; height: 132px; border-radius: 66px; overflow: hidden;
+       background: linear-gradient(100deg, rgba(10,26,48,.78), rgba(6,14,28,.55)); border: 1px solid rgba(92,225,255,.28);
+       box-shadow: inset 0 0 30px rgba(92,225,255,.08), 0 10px 30px rgba(0,0,0,.35); transition: opacity .4s; }
+#orb.empty { opacity: 0; }
+body.apps #orb, body.row0 #orb { opacity: .35; }
+#orb .circ { position: absolute; left: 11px; top: 11px; width: 110px; height: 110px; }
+#orb .circ img { position: absolute; left: 9px; top: 9px; width: 92px; height: 92px; border-radius: 50%; object-fit: cover; object-position: 50% 25%; }
+#orb .circ .big { position: absolute; left: 9px; top: 9px; width: 92px; height: 92px; border-radius: 50%; display: none;
+       background: radial-gradient(circle, rgba(92,225,255,.25), rgba(5,11,20,.9)); color: var(--ink); font-family: Orb; font-size: 34px;
+       line-height: 92px; text-align: center; text-shadow: 0 0 14px var(--cyan); }
+#orb.stat .circ img { display: none; } #orb.stat .circ .big { display: block; }
+#orb svg { position: absolute; inset: 0; width: 110px; height: 110px; }
+#orb .spin { transform-origin: 55px 55px; animation: girar 18s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+#orb .txt { position: absolute; left: 140px; right: 40px; top: 20px; transition: opacity .5s, transform .5s; }
+#orb .txt.out { opacity: 0; transform: translateX(14px); }
+#orb .lab { font-family: Orb; font-size: 14px; letter-spacing: 3px; color: var(--cyan); }
+#orb .lab i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); margin-right: 9px; vertical-align: 2px; box-shadow: 0 0 8px var(--cyan); }
+#orb.live .lab i { background: #ff5060; box-shadow: 0 0 8px #ff5060; }
+#orb .tt { margin-top: 6px; font-family: Raj; font-weight: 700; font-size: 34px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#orb .st { margin-top: 1px; font-family: Raj; font-weight: 600; font-size: 22px; color: #a9c9e2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#orb .dots { position: absolute; right: 30px; top: 22px; }
+#orb .dots b { display: inline-block; width: 6px; height: 6px; border-radius: 3px; margin-left: 6px; background: rgba(255,255,255,.22); transition: all .4s; }
+#orb .dots b.on { width: 18px; background: var(--cyan); }
+</style>
+</head>
+<body>
+<video id="bg" src="sk/wall-4k.mp4" poster="sk/wallpaper.jpg" autoplay muted loop playsinline
+  onerror="this.remove();document.documentElement.classList.add('nobg')"></video>
+<div id="stage">
+  <div id="clock"><b id="hh">--:--</b><span id="dd"></span><div id="net">CONECTANDO…</div></div>
+  <div id="tx"><b>SKIPPY //</b><span id="txt"></span></div>
+  <div id="cards"><div class="track"></div></div>
+  <div id="cardinfo"><b></b><span></span></div>
+  <div id="orb" class="empty">
+    <div class="circ"><img id="orbImg"><div class="big" id="orbBig"></div>
+      <svg viewBox="0 0 110 110"><circle cx="55" cy="55" r="51" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="4"/>
+        <circle id="orbRing" cx="55" cy="55" r="51" fill="none" stroke="#5ce1ff" stroke-width="4" stroke-linecap="round"
+          stroke-dasharray="0 320.4" transform="rotate(-90 55 55)" style="filter: drop-shadow(0 0 4px #5ce1ff); transition: stroke-dasharray .8s"/>
+        <g class="spin"><circle cx="55" cy="55" r="54" fill="none" stroke="rgba(92,225,255,.45)" stroke-width="1.2" stroke-dasharray="3 9"/>
+          <circle cx="55" cy="1" r="2.6" fill="#5ce1ff"/></g></svg></div>
+    <div class="txt" id="orbTxt"><div class="lab" id="orbLab"><i></i></div><div class="tt" id="orbTt"></div><div class="st" id="orbSt"></div></div>
+    <div class="dots" id="orbDots"></div>
+  </div>
+  <div id="dock"><div class="row"></div></div>
+  <div id="hint">▼  TODOS OS APPS · ENTRADAS · IR PARA</div>
+  <div id="go"><div>IR PARA<input id="goin" placeholder="endereço ou busca"><p>OK abre · voltar fecha · sem ponto vira busca no Google</p></div></div>
+  <div id="allwrap"><h2>TODOS OS APPS</h2><div id="all"></div></div>
+</div>
+
+<script>
+// Hisense VIDAA: sem ponte Android; apps, entradas e home passam pela tv4k-bridge (MQTT da TV) no dotpi
+const BR = '__BRIDGE__', SERVER = BR + '/cards';   // preenchido pelo vidaa/deploy.sh a partir do house.json
+const FEED = SERVER + '/feed.json?home=1';
+const PONTE = '__SERVER__/ponte';
+const TV4K = '__TV4K__';   // painel 4K nativo (video HLS), vazio = sem o icone
+// dock: banner do tema + nome do app como a TV lista (ou acao interna)
+const DOCK_ALL = [
+  {b: 'painel4k', go: '@tv4k'}, {b: 'plex', go: 'Plex'}, {b: 'youtube', go: 'YouTube'}, {b: 'netflix', go: 'Netflix'}, {b: 'globoplay', go: 'GloboPlay'},
+  {b: 'max', go: 'HBO Max'}, {b: 'disney', go: 'Disney+'}, {b: 'ponte', go: '@ponte'}, {b: 'settings', go: '@vidaa'},
+];
+let DOCK = [];
+if (!TV4K) DOCK_ALL.shift();
+const THEMED = {'Prime Video': 'primevideo', 'Apple TV': 'appletv', 'Spotify : Music & Podcasts': 'spotify', 'TV Channels▶': 'livechannels'};
+const HIDE = new Set(['E-Manual', 'Skippy', 'V-Shop', 'V Home']);
+const FIXOS = [
+  {spec: '@url', label: 'Ir para', banner: true, img: 'sk/banners/banner-browser.png'},
+  {spec: '@src:HDMI1', label: 'HDMI 1', banner: true, img: 'sk/banners/banner-hdmi1.png'},
+  {spec: '@src:HDMI2', label: 'HDMI 2', banner: true, img: 'sk/banners/banner-hdmi2.png'},
+  {spec: '@src:HDMI3', label: 'HDMI 3', banner: true, img: 'sk/banners/banner-hdmi3.png'},
+];
+const api = p => fetch(BR + p, {cache: 'no-store'}).then(r => r.json());
+const Launcher = {
+  launch(spec) {
+    if (spec === '@ponte') location.href = PONTE;
+    else if (spec === '@tv4k') location.href = TV4K;
+    else if (spec === '@vidaa') api('/api/vidaa?min=10');
+    else if (spec === '@url') openGo();
+    else if (spec.indexOf('@src:') === 0) api('/api/source?id=' + spec.slice(5));
+    else api('/api/launch?appId=' + encodeURIComponent(spec));
+  },
+  open(intent) {   // intents do feed (feitos pro Android) traduzidos
+    const m = /S\.focus=([^;]+)/.exec(intent), g = /S\.go=([^;]+)/.exec(intent);
+    if (intent.indexOf('.Ponte') >= 0) location.href = PONTE + (m ? '?focus=' + m[1] : '');
+    else if (intent.indexOf('com.plexapp') >= 0) { const p = APPS.find(a => a.name === 'Plex'); if (p) this.launch(p.appId); }
+    else if (g) location.href = decodeURIComponent(g[1]);
+  },
+};
+let APPS = [];
+
+// relógio
+const tick = () => { const d = new Date();
+  hh.textContent = d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+  dd.textContent = d.toLocaleDateString('pt-BR', {weekday: 'long', day: '2-digit', month: 'long'}).toUpperCase(); };
+tick(); setInterval(tick, 5000);
+
+// estado de foco: row 0 = cards, 1 = dock, 2 = todos os apps
+let row = 1, idx = [0, 0, 0], CARDS = [], ALL = [], loaded = false, feedSig = '';
+const COLS = 7;
+
+function render() {
+  const t = document.querySelector('#cards .track');
+  t.innerHTML = CARDS.length ? '' : `<div class="empty">${loaded ? 'SEM SINAL DO SKIPPY-CARDS (.46)' : 'CARREGANDO…'}</div>`;
+  CARDS.forEach((c, i) => { const e = document.createElement('div'); e.className = 'card'; e.dataset.r = 0; e.dataset.i = i;
+    e.innerHTML = `<img src="${c.img}">`; t.appendChild(e); });
+  const d = document.querySelector('#dock .row'); d.innerHTML = '';
+  DOCK.forEach((a, i) => { const e = document.createElement('div'); e.className = 'app'; e.dataset.r = 1; e.dataset.i = i;
+    e.innerHTML = `<img src="sk/banners/banner-${a.b}.png">`; d.appendChild(e); });
+  const g = document.getElementById('all'); g.innerHTML = '';
+  ALL.forEach((a, i) => { const e = document.createElement('div'); e.className = 'tile'; e.dataset.r = 2; e.dataset.i = i;
+    e.innerHTML = THEMED[a.label] ? `<img class="ban" src="sk/banners/banner-${THEMED[a.label]}.png">` : a.banner ? `<img class="ban" src="${a.img}">` : `<img class="ico" src="${a.img}"><span>${a.label.toUpperCase()}</span>`;
+    g.appendChild(e); });
+  focus();
+}
+
+function count(r) { return r === 0 ? CARDS.length : r === 1 ? DOCK.length : ALL.length; }
+function focus() {
+  document.querySelectorAll('.focus').forEach(e => e.classList.remove('focus'));
+  if (row === 0 && !CARDS.length) row = 1;
+  idx[row] = Math.max(0, Math.min(count(row) - 1, idx[row]));
+  const el = document.querySelector(`[data-r="${row}"][data-i="${idx[row]}"]`);
+  if (el) el.classList.add('focus');
+  document.body.classList.toggle('apps', row === 2); document.body.classList.toggle('row0', row === 0);
+  const t = document.querySelector('#cards .track');
+  const off = Math.max(0, Math.min(idx[0] * 542 - 542, Math.max(0, CARDS.length * 542 - 1728)));
+  t.style.transform = `translateX(${-off}px)`;
+  // lista longa de apps: rola a grade junto com o foco
+  const lin = Math.floor(idx[2] / COLS);
+  document.getElementById('all').style.transform = row === 2 ? `translateY(${-Math.max(0, lin - 1) * 161}px)` : '';
+  const c = CARDS[idx[0]];
+  cardinfo.style.opacity = row === 0 && c ? 1 : 0;
+  if (c) { cardinfo.querySelector('b').textContent = c.title; cardinfo.querySelector('span').textContent = c.desc || ''; }
+}
+
+function activate() {
+  if (row === 0) { const c = CARDS[idx[0]]; if (c && c.intent) Launcher.open(c.intent); }
+  else if (row === 1) Launcher.launch(DOCK[idx[1]].go);
+  else { const a = ALL[idx[2]]; if (a) Launcher.launch(a.spec); }
+}
+
+// barra Ir para
+const goEl = document.getElementById('go'), goIn = document.getElementById('goin');
+function openGo() { goEl.classList.add('on'); goIn.value = ''; goIn.focus(); }
+function closeGo() { goEl.classList.remove('on'); goIn.blur(); }
+function goTo(u) { u = u.trim(); if (!u) return closeGo();
+  if (!/^https?:\/\//.test(u)) u = /\s/.test(u) || u.indexOf('.') < 0 ? 'https://www.google.com/search?q=' + encodeURIComponent(u) : 'https://' + u;
+  location.href = u; }
+
+const KEYS = {37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown', 13: 'Enter', 8: 'Back', 461: 'Back', 10009: 'Back'};
+document.addEventListener('keydown', ev => {
+  const k = KEYS[ev.keyCode] || ev.key;
+  if (goEl.classList.contains('on')) {
+    if (k === 'Enter') { goTo(goIn.value); ev.preventDefault(); }
+    else if (k === 'Back' && !goIn.value) { closeGo(); ev.preventDefault(); }
+    return;
+  }
+  if (k === 'ArrowRight') idx[row]++;
+  else if (k === 'ArrowLeft') idx[row]--;
+  else if (k === 'ArrowDown') { if (row === 2) idx[2] += COLS; else row++; }
+  else if (k === 'ArrowUp') { if (row === 2 && idx[2] >= COLS) idx[2] -= COLS; else if (row > 0) row--; }
+  else if (k === 'Enter') { activate(); ev.preventDefault(); return; }
+  else if (k === 'Back') { if (row !== 1) { row = 1; focus(); } ev.preventDefault(); return; }
+  else return;
+  if (row === 2 && !ALL.length) row = 1;
+  focus(); ev.preventDefault();
+});
+
+async function loadFeed() {
+  try {
+    const r = await fetch(FEED, {cache: 'no-store'}); const j = await r.json();
+    const st = await api('/api/state').catch(() => ({}));
+    net.className = st.connected ? 'ok' : 'off'; net.textContent = st.connected ? 'SKIPPY ONLINE' : 'TV SEM PONTE';
+    const sigNew = JSON.stringify(j.cards || []);
+    if (sigNew === feedSig) { loaded = true; return; }
+    feedSig = sigNew;
+    const keep = row === 0 && CARDS[idx[0]] ? CARDS[idx[0]].id : null;
+    CARDS = j.cards || [];
+    if (keep) { const n = CARDS.findIndex(c => c.id === keep); if (n >= 0) idx[0] = n; }
+  } catch (e) { net.className = 'off'; net.textContent = 'SKIPPY OFFLINE'; }
+  loaded = true; render();
+}
+
+async function loadApps() {
+  try {
+    APPS = await api('/api/apps');
+    if (!APPS.length) return setTimeout(loadApps, 5000);   // ponte acabou de conectar
+    const byName = n => APPS.find(a => a.name === n);
+    DOCK = DOCK_ALL.map(d => d.go[0] === '@' ? d : byName(d.go) ? {b: d.b, go: byName(d.go).appId} : null).filter(Boolean);
+    const fav = new Set(DOCK_ALL.map(d => d.go));
+    ALL = FIXOS.concat(APPS.filter(a => !HIDE.has(a.name) && !fav.has(a.name))
+      .map(a => ({spec: a.appId, label: a.name, banner: false, img: a.icon})));
+  } catch (e) { DOCK = DOCK_ALL.filter(d => d.go[0] === '@'); ALL = FIXOS.slice(); setTimeout(loadApps, 10000); }
+  render();
+}
+render(); loadApps();
+loadFeed(); setInterval(loadFeed, 30 * 1000);
+</script>
+<div id="warp"><canvas id="wc" width="1920" height="1080"></canvas><h1 id="wt">SALTO HIPERESPACIAL</h1><h2 id="ws"></h2></div>
+<script>
+// transmissão: frase viva do skippy-cards, digitada
+const QUIP = SERVER + '/api/quip?where=home';
+let typing = null, lastQ = '';
+async function quip() {
+  try { const q = await (await fetch(QUIP, {cache: 'no-store'})).json(); if (q.text === lastQ) return; lastQ = q.text;
+    const el = document.getElementById('tx'), t = document.getElementById('txt'); el.className = q.mood; let i = 0; t.textContent = '';
+    clearInterval(typing); typing = setInterval(() => { t.textContent = q.text.slice(0, ++i); if (i >= q.text.length) clearInterval(typing); }, 30);
+  } catch (e) {}
+}
+quip(); setInterval(quip, 30000);
+
+// easter egg: código Konami → salto hiperespacial (estrelas esticando) e volta
+const KON = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight'];
+let kseq = [], warping = false;
+const DEST = ['Destino: Plex. Tempo estimado: 0 s. Distância percorrida: nenhuma.', 'Destino: a geladeira. Rota calculada.',
+  'Destino: Alfa Centauri. Cancelado: o Wi-Fi não pega lá.', 'Destino: o mesmo sofá. Viagem incrível, né?'];
+function warp() {
+  if (warping) return; warping = true;
+  const w = document.getElementById('warp'), c = document.getElementById('wc'), g = c.getContext('2d');
+  document.getElementById('ws').textContent = DEST[Math.floor(Math.random() * DEST.length)];
+  w.classList.add('on');
+  const S = Array.from({length: 400}, () => ({a: Math.random() * 6.283, r: Math.random() * 60, v: 2 + Math.random() * 6}));
+  let f = 0;
+  const step = () => {
+    g.fillStyle = 'rgba(0,4,12,.35)'; g.fillRect(0, 0, 1920, 1080);
+    const k = Math.min(1, f / 60);
+    S.forEach(s => { const r0 = s.r; s.r += s.v * (1 + k * 18); const x0 = 960 + Math.cos(s.a) * r0, y0 = 540 + Math.sin(s.a) * r0,
+      x1 = 960 + Math.cos(s.a) * s.r, y1 = 540 + Math.sin(s.a) * s.r;
+      g.strokeStyle = `rgba(${170 + 80 * k},235,255,${.5 + .5 * k})`; g.lineWidth = 1 + k * 2; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      if (s.r > 1200) { s.r = Math.random() * 40; } });
+    if (++f < 200) requestAnimationFrame(step); else { w.classList.remove('on'); g.clearRect(0, 0, 1920, 1080); warping = false; lastQ = '';
+      document.getElementById('txt').textContent = 'Salto concluído. Chegamos exatamente onde estávamos. De nada.'; }
+  };
+  step();
+}
+document.addEventListener('keydown', ev => { if (warping) { ev.stopPropagation(); ev.preventDefault(); return; } kseq.push(ev.key); kseq = kseq.slice(-8); if (kseq.join() === KON.join()) { kseq = []; row = 1; idx[1] = 0; focus(); warp(); ev.stopPropagation(); ev.preventDefault(); } }, true);
+</script>
+<script>
+// órbita do Plex: slides do /api/plex (agora, continuar, próximo, chegou, semana), troca a cada 9 s
+const SRV = SERVER;
+let OS = [], oi = 0;
+function slides(v) {
+  const s = [], ago = t => { const d = Math.floor((Date.now() / 1000 - (t || 0)) / 86400); return d < 1 ? 'hoje' : d < 2 ? 'ontem' : 'há ' + d + ' dias'; };
+  if (v.now) s.push({lab: v.now.state === 'paused' ? 'PLEX // PAUSADO' : 'PLEX // TOCANDO AGORA', live: true, tt: v.now.show, st: v.now.sub + (v.now.left != null ? ' · faltam ' + v.now.left + ' min' : ''), img: v.now.poster, prog: v.now.prog});
+  if (v.next) s.push({lab: 'PLEX // PRÓXIMO EPISÓDIO', tt: v.next.show, st: v.next.sub, img: v.next.poster, prog: 0});
+  (v.cont || []).slice(0, 2).forEach(c => s.push({lab: 'PLEX // CONTINUAR', tt: c.show, st: c.sub + (c.left != null ? ' · faltam ' + c.left + ' min' : ''), img: c.poster, prog: c.prog}));
+  (v.new || []).slice(0, 3).forEach(n => s.push({lab: 'PLEX // CHEGOU ' + ago(n.added).toUpperCase(), tt: n.show, st: n.sub, img: n.poster, prog: 0}));
+  const w = v.week;
+  if (w && (w.eps || w.movies)) s.push({lab: 'PLEX // TUA SEMANA', stat: String(w.eps + w.movies), tt: w.eps + ' episódio' + (w.eps !== 1 ? 's' : '') + ' · ' + w.movies + ' filme' + (w.movies !== 1 ? 's' : ''),
+    st: w.top && w.top_n >= 2 ? 'Maratona: ' + w.top + ', ' + w.top_n + ' ep. Eu vi. Eu julguei.' : 'Ritmo moderado. Eu esperava mais de ti.', prog: 0});
+  return s;
+}
+function show(i) {
+  const o = document.getElementById('orb'), t = document.getElementById('orbTxt'), x = OS[i]; if (!x) return;
+  t.classList.add('out');
+  setTimeout(() => {
+    o.className = (x.live ? 'live' : '') + (x.stat ? ' stat' : '');
+    document.getElementById('orbLab').innerHTML = '<i></i>' + x.lab;
+    document.getElementById('orbTt').textContent = x.tt || '';
+    document.getElementById('orbSt').textContent = x.st || '';
+    if (x.img) document.getElementById('orbImg').src = SRV + x.img;
+    document.getElementById('orbBig').textContent = x.stat || '';
+    document.getElementById('orbRing').setAttribute('stroke-dasharray', (320.4 * (x.prog || 0)).toFixed(1) + ' 320.4');
+    document.getElementById('orbDots').innerHTML = OS.map((_, k) => '<b' + (k === i ? ' class="on"' : '') + '></b>').join('');
+    t.classList.remove('out');
+  }, 450);
+}
+async function loadPlex() {
+  try { const v = await (await fetch(SRV + '/api/plex', {cache: 'no-store'})).json(); const n = slides(v);
+    if (JSON.stringify(n) !== JSON.stringify(OS)) { OS = n; oi = oi % Math.max(1, OS.length); show(oi); }
+  } catch (e) {}
+}
+loadPlex(); setInterval(loadPlex, 60000);
+setInterval(() => { if (OS.length > 1) { oi = (oi + 1) % OS.length; show(oi); } }, 9000);
+</script>
+</body>
+</html>

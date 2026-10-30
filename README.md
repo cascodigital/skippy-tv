@@ -92,6 +92,7 @@ Want to see them without a remote? Open `http://<cards-server>:8099/ponte?egg=el
 |---|---|---|
 | **NVIDIA Shield TV, 1st gen** (2015, Tegra X1) — Android TV 11, 4K — living room | ✅ tested daily | The Skippy launcher as the real system home (instant Home button). Projectivy + icon pack + *Watch Next* cards also supported as a lighter option |
 | **Amazon Fire TV Stick 4K, 1st gen** (AFTMM) — Fire OS 6 / Android 7.1 — bedroom | ✅ tested daily | The same Skippy launcher; Amazon does not allow replacing its home, so a watcher brings Skippy back ~5 s after Home |
+| **Hisense 55A60QUV** — VIDAA (not Android), 4K — kitchen | ✅ tested | The same home as a web page behind a tile; a bridge on the Docker host replaces VIDAA's home ~3-5 s after Home and launches native apps; animated background in real 4K via the video plane. Guide: [docs/VIDAA.md](docs/VIDAA.md) |
 | Any other Android TV / Google TV (Chromecast with Google TV, Mi Box, TCL, Philips…) | ⚠️ should work, not tested | Same app, Android 7.1+; the dock picks whichever of its apps are installed |
 
 The whole thing is plain Android APIs (Watch Next, `MediaCodec`, `WebView`), a small Python server and
@@ -120,6 +121,7 @@ What the agent gets:
 - [`docs/HOUSE.md`](docs/HOUSE.md) — the schema, and the few things that are taste rather than wiring
   (Skippy's lines, the dock, the banners).
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — how it all works and every device trap we measured.
+- [`docs/VIDAA.md`](docs/VIDAA.md) — Hisense/Toshiba VIDAA TVs: pairing, tile, bridge, 4K background, what did not work.
 
 ## Pieces
 

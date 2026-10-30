@@ -87,7 +87,7 @@ for i in range(40):  # ticks along left edge
 fo = ImageFont.truetype(F + 'Orbitron.ttf', 34); fo.set_variation_by_name('Medium')
 fs = ImageFont.truetype(F + 'Rajdhani-SemiBold.ttf', 34)
 hd.text((m + 50, m + 40), 'SKIPPY  //  ELDER AI', font=fo, fill=CYAN + (150,))
-hd.text((m + 50, m + 90), 'BRIDGE 01  ·  SALA  ·  NODE 192.168.2.111', font=fs, fill=CYAN + (90,))
+hd.text((m + 50, m + 90), (sys.argv[2] if len(sys.argv) > 2 else 'BRIDGE 01  ·  SALA  ·  NODE 192.168.2.111'), font=fs, fill=CYAN + (90,))
 hd.arc([W - 1320, 900, W - 120, 2100], 200, 300, fill=CYAN + (40,), width=3)
 hd.arc([W - 1240, 980, W - 200, 2020], 210, 280, fill=CYAN + (70,), width=2)
 glow = hud.filter(ImageFilter.GaussianBlur(6))
@@ -144,6 +144,10 @@ APPS = {  # pacote: (svg ou None, rótulo, texto do logo)
     'appletv': ('appletv', 'APPLE TV', None), 'max': (None, 'MAX', 'max'), 'vlc': ('vlc', 'VLC', None),
     'apps': ('grid', 'APPS', None), 'ponte': ('cam', 'PONTE', None),
     'skippy': (None, 'ELDER AI', 'SKIPPY'), 'settings': ('gear', 'AJUSTES', None), 'livechannels': ('tv', 'CANAIS', None),
+    # Hisense VIDAA (home web)
+    'disney': (None, 'DISNEY+', 'disney+'), 'spotify': (None, 'SPOTIFY', 'spotify'), 'browser': (None, 'NAVEGADOR', 'www'),
+    'painel4k': (None, 'PAINEL 4K', '4K'),
+    'hdmi1': ('tv', 'HDMI 1', None), 'hdmi2': ('tv', 'HDMI 2', None), 'hdmi3': ('tv', 'HDMI 3', None),
 }
 for key, (svg, name, txt) in APPS.items():
     im = panel()

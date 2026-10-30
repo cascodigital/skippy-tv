@@ -17,3 +17,7 @@ cards/data/
 *.sync-conflict-*
 .syncthing.*.tmp
 *.idsig
+# VIDAA: Sidee (baixado pelo setup), libs e token de pareamento
+vidaa/bridge/sidee/
+vidaa/bridge/py/
+vidaa/bridge/sideehome/

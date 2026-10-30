@@ -39,7 +39,9 @@
   ],
   "devices": [
     {"ip": "192.168.2.111", "room": "sala", "bridge": "BRIDGE 01", "label": "SALA", "media_player": "media_player.android_tv_2", "wallpaper": "dist/out/wallpaper-anim.mp4"},
-    {"ip": "192.168.2.140", "room": "quarto", "bridge": "BRIDGE 02", "label": "QUARTO", "media_player": "media_player.borboleta_2", "wallpaper": "dist/out/wallpaper-anim-quarto.mp4", "fire_tv": true}
+    {"ip": "192.168.2.140", "room": "quarto", "bridge": "BRIDGE 02", "label": "QUARTO", "media_player": "media_player.borboleta_2", "wallpaper": "dist/out/wallpaper-anim-quarto.mp4", "fire_tv": true},
+    {"ip": "192.168.2.246", "room": "cozinha", "bridge": "BRIDGE 03", "label": "COZINHA", "media_player": "media_player.hisense_55a6qu_019fcca1_television", "wallpaper": "dist/out/wallpaper-4k-cozinha.mp4",
+     "vidaa": {"ssh": "dotpi", "dir": "/dados/dockers/tv4k", "web": "http://192.168.2.102:8780", "bridge": "http://192.168.2.102:8781", "tv4k": "http://192.168.2.102:8780/"}}
   ],
   "extras": {
     "laptop_open": "input_boolean.ilatitude"
