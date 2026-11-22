@@ -142,7 +142,7 @@ body.apps #orb, body.row0 #orb { opacity: .35; }
 </div>
 
 <script>
-// Hisense VIDAA: sem ponte Android; apps, entradas e home passam pela tv4k-bridge (MQTT da TV) no dotpi
+// Hisense VIDAA: sem ponte Android; apps, entradas e home passam pela bridge (MQTT da TV) no host Docker
 const BR = '__BRIDGE__', SERVER = BR + '/cards';   // preenchido pelo vidaa/deploy.sh a partir do house.json
 const FEED = SERVER + '/feed.json?home=1';
 const PONTE = '__SERVER__/ponte';

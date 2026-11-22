@@ -36,9 +36,9 @@ No ffmpeg/cairo locally? Run both in a throwaway `python:3.12-slim` container wi
 
 Add the TV to `devices` with a `vidaa` block (see `docs/HOUSE.md` for the other fields):
 ```json
-{"ip": "192.168.2.246", "room": "cozinha", "bridge": "BRIDGE 03", "label": "COZINHA",
+{"ip": "<tv-ip>", "room": "cozinha", "bridge": "BRIDGE 03", "label": "COZINHA",
  "media_player": "media_player.hisense_…", "wallpaper": "dist/out/wallpaper-4k-cozinha.mp4",
- "vidaa": {"ssh": "dotpi", "dir": "/dados/dockers/tv4k", "web": "http://<host>:8780",
+ "vidaa": {"ssh": "<ssh-host>", "dir": "<remote-dir>", "web": "http://<host>:8780",
            "bridge": "http://<host>:8781", "tv4k": ""}}
 ```
 `tv4k` = URL of an optional native-4K panel (first dock icon); empty = no icon.

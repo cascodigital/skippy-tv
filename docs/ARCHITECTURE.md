@@ -6,17 +6,17 @@ Everything below was measured on the real devices on 2026-10-25, not assumed.
 
 | Host | Role |
 |---|---|
-| `192.168.2.46` (Orange Pi 5, Docker) | `skippy-cards` container, port 8099. Plex Media Server on 32400. |
-| `192.168.2.102` (OptiPlex) | `go2rtc` for the patio camera (Tapo C206 facing the gate), stream `rua`, API/UI on 1984. |
-| `192.168.2.25` | Home Assistant. |
-| `192.168.2.111` | NVIDIA Shield, living room. |
-| `192.168.2.140` | Fire TV Stick 4K (AFTMM), bedroom. |
+| `<docker-host>` (Orange Pi 5, Docker) | `skippy-cards` container, port 8099. Plex Media Server on 32400. |
+| `<go2rtc-host>` (small x86 PC) | `go2rtc` for the patio camera (Tapo C206 facing the gate), stream `rua`, API/UI on 1984. |
+| `<ha-host>` | Home Assistant. |
+| `<shield-ip>` | NVIDIA Shield, living room. |
+| `<fire-tv-ip>` | Fire TV Stick 4K (AFTMM), bedroom. |
 
 ## Data flow
 
 ```
 Plex (/hubs/continueWatching/items, recentlyAdded) ─┐
-Home Assistant (/api/states, /api/services/light) ──┼─► skippy-cards (.46:8099) ──► /feed.json + /c/*.png
+Home Assistant (/api/states, /api/services/light) ──┼─► skippy-cards (:8099)    ──► /feed.json + /c/*.png
 go2rtc (/api/frame.jpeg?src=rua) ───────────────────┘          │                       │
                                                                 │ /ponte, /api/lights   │
                                                                 ▼                       ▼
@@ -142,8 +142,8 @@ typed letter by letter every 20 s), the Fire TV home (line above the cards, ever
   every 4 min. The camera card gets a red "MOVIMENTO NA RUA" strip, or a "último movimento há N min" tag.
 
 ### Which room is watching
-The server maps the requesting IP to a room (`NODES` in `cards/app.py`: `.111` = living room / Shield,
-`.140` = bedroom / Fire TV), so `/api/quip` and `/feed.json` know who is asking. Room lines: bedtime jokes in
+The server maps the requesting IP to a room (`NODES` in `cards/app.py`, built from `devices[]` in `house.json`: Shield IP = living room,
+Fire TV IP = bedroom), so `/api/quip` and `/feed.json` know who is asking. Room lines: bedtime jokes in
 the bedroom after 23 h, "you are in the bedroom and the living-room light is on", dimmer hints in the living room.
 The Shield home is Projectivy (no free text), so the living room gets an extra first card, **"Skippy diz"**,
 with the line in large type (`card_quote`); the Fire TV home shows the line as text above the cards.

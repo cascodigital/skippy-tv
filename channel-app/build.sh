@@ -1,13 +1,14 @@
 #!/bin/bash
 # Compila o app do canal "Skippy" (Java puro, sem Gradle) -> skippy-channel.apk
 set -e
-P=$(cd "$(dirname "$0")" && pwd); T=~/ai/tools/android-build
+P=$(cd "$(dirname "$0")" && pwd); T=${ANDROID_BUILD_DIR:-$HOME/android-build}   # JDK + build-tools + android.jar (README: Requirements)
 BT=$T/android-14; JAR=$T/android-34/android.jar; export JAVA_HOME=$(ls -d $T/jdk-*); export PATH=$JAVA_HOME/bin:$PATH
 W=$P/../dist/channel-build; rm -rf $W; mkdir -p $W/res/drawable-nodpi $W/gen $W/classes $W/dex
 cp $P/../dist/out/banner-skippy.png $W/res/drawable-nodpi/banner.png
 mkdir -p $W/assets/banners
 # tudo que é da casa sai do house.json (docs/HOUSE.md)
 HJ=${HOUSE_JSON:-$P/../house.json}
+[ -f "$HJ" ] || { echo "missing $HJ: cp house.example.json house.json and edit it (docs/HOUSE.md)"; exit 1; }
 read -r SERVER CAMTS WFIRE WTV < <(python3 - "$HJ" <<'PYH'
 import json, sys
 h = json.load(open(sys.argv[1])); c = h['camera']

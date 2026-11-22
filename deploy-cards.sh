@@ -1,8 +1,10 @@
 #!/bin/bash
-# Publica o servidor skippy-cards no host Docker. Uso: ./deploy-cards.sh [ssh-host] [pasta-remota]
-# O .env (tokens) já tem que existir na pasta remota: ver cards/.env.example.
+# Deploys the skippy-cards server to the Docker host. Usage: ./deploy-cards.sh <ssh-host> <remote-dir>
+# The .env (tokens) must already exist in the remote dir: see cards/.env.example.
 set -e
-P=$(cd "$(dirname "$0")" && pwd); HOST=${1:-h46}; DIR=${2:-/dados/dockers/skippy-cards}
+[ $# -eq 2 ] || { echo "usage: $0 <ssh-host> <remote-dir>   (e.g. $0 docker-host /srv/skippy-cards)"; exit 1; }
+P=$(cd "$(dirname "$0")" && pwd); HOST=$1; DIR=$2
+[ -f "$P/house.json" ] || { echo "missing $P/house.json: cp house.example.json house.json and edit it (docs/HOUSE.md)"; exit 1; }
 ssh "$HOST" "mkdir -p $DIR/data && test -f $DIR/.env" || { echo "falta $DIR/.env no $HOST (copie cards/.env.example)"; exit 1; }
 tar czf - -C "$P/cards" app.py quips.py plexw.py ponte.html Dockerfile docker-compose.yml wallpaper.jpg fonts \
   -C "$P" house.json | ssh "$HOST" "cd $DIR && tar xzf -"

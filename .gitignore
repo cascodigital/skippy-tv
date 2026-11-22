@@ -6,6 +6,8 @@ venv/
 __pycache__/
 *.pyc
 # segredos: nunca no repo
+# descrição da casa real (IPs, entidades): o modelo versionado é house.example.json
+house.json
 *.keystore
 *.jks
 *.pass

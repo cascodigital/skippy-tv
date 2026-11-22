@@ -4,6 +4,7 @@
 # Pagina -> <dir>/app/skippy.html, assets -> <dir>/app/sk/, ponte -> <dir>/bridge/ (token remoto nunca e sobrescrito).
 set -e
 P=$(cd "$(dirname "$0")/.." && pwd)
+[ -f "$P/house.json" ] || { echo "missing $P/house.json: cp house.example.json house.json and edit it (docs/HOUSE.md)"; exit 1; }
 read -r SSH DIR WEB BRIDGE TV4K SERVER TVIP < <(python3 - "$P/house.json" "$1" <<'PY'
 import json, sys
 h = json.load(open(sys.argv[1])); want = sys.argv[2] if len(sys.argv) > 2 else ''

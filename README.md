@@ -1,110 +1,267 @@
-<div align="center">
+# skippy-tv
 
-# Skippy TV
+A sci-fi "starship bridge" home screen for Android TV, Fire TV and Hisense VIDAA TVs, wired to Home Assistant, Plex and a go2rtc camera, for people who run a smart home and want the TV launcher to show it.
 
-**A sci-fi starship-bridge home screen for Android TV — wired to a real house.**
+![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.12-3776AB) ![Status](https://img.shields.io/badge/status-active-green)
 
-Animated space wallpaper · neon app banners · live Plex and Home Assistant cards ·
-a live patio camera at ~1 s latency · house lights with dimmer · an AI with an attitude problem.
+![Demo on the NVIDIA Shield](docs/screenshots/demo.gif)
 
-![Android TV](https://img.shields.io/badge/Android%20TV-7.1%2B-3DDC84?logo=android&logoColor=white)
-![Fire TV](https://img.shields.io/badge/Fire%20TV-Fire%20OS%206-FF9900?logo=amazon&logoColor=white)
-![NVIDIA Shield](https://img.shields.io/badge/NVIDIA%20Shield-1st%20gen-76B900?logo=nvidia&logoColor=white)
-![Home Assistant](https://img.shields.io/badge/Home%20Assistant-REST-41BDF5?logo=homeassistant&logoColor=white)
-![Plex](https://img.shields.io/badge/Plex-continue%20watching-EBAF00?logo=plex&logoColor=white)
-![License: MIT](https://img.shields.io/badge/license-MIT-blue)
+<sub>Screen capture from the living-room NVIDIA Shield (1080p, shortened): home, cards, the Bridge panel with the
+live camera, and the Konami-code hyperspace jump. The street camera picture is blurred in all published media.
+Full 43-second recording at 30 fps (MP4, 10 MB):
+<a href="https://github.com/cascodigital/skippy-tv/raw/main/docs/demo-shield-1080p.mp4">download / play</a>.</sub>
 
-![Demo on the Fire TV](docs/screenshots/demo.gif)
+## Overview
 
-<sub>Real capture from the living-room NVIDIA Shield (1080p capture, cut short): home, cards, the Bridge with the live camera, and the Konami hyperspace jump.
-Full 43-second recording at 30 fps (MP4, 10 MB, opens in your player): <a href="https://github.com/cascodigital/skippy-tv/raw/main/docs/demo-shield-1080p.mp4">download / play</a>.</sub>
+Stock TV launchers show ads and app rows; they know nothing about the house. skippy-tv replaces the home screen
+with an animated space-themed launcher that shows live Home Assistant data (climate, door, lights, camera motion),
+Plex "continue watching" and new arrivals, a low-latency live camera and light controls, plus a status line written
+by "Skippy", an AI persona from the *Expeditionary Force* novels. Everything house-specific lives in one file,
+`house.json`, so the same code can be rebuilt for another house.
 
-</div>
+## Features
 
-> **Built for 4K TVs.** The UI is laid out at 1080p and scaled by the box; the living-room Shield renders it at native 3840×2160
-> (its screenshot below is a 4K capture) and the static wallpaper is rendered at 4K. The demo is a 1080p screen capture to keep it light.
+- Replaces the system home on Android TV (`set-home-activity`); on Fire TV, where Amazon blocks that, a watcher
+  service brings the launcher back about 5 s after the Home button.
+- Shows a looping animated wallpaper (rendered locally to MP4) behind a WebView UI with HUD cards, a round Plex
+  widget and a dock built from whichever supported apps are installed.
+- Renders HUD cards server-side (Python, Docker): climate, camera snapshot with motion state, lights, Plex
+  continue-watching and new arrivals.
+- Plays the go2rtc camera with about 1 s latency on weak boxes through a hand-written MPEG-TS demuxer feeding
+  `MediaCodec` (hardware decode).
+- Toggles and dims an allow-list of Home Assistant light groups from the D-pad on the "Bridge" panel; tokens stay
+  on the server.
+- Picks context-aware one-liners from the house state (motion, door left open, Plex, time of day, dates) and knows
+  which room is asking.
+- Serves the same home as a web page on Hisense VIDAA TVs, with a bridge that takes over VIDAA's home screen and
+  launches native apps ([docs/VIDAA.md](docs/VIDAA.md)).
+- Includes `tools/discover_ha.py`, a read-only Home Assistant scan that drafts `house.json`.
 
-> 🕹️ **There are secrets aboard.** Skippy hates it when monkeys find them.
-> Old-school gamers already know where to start: <kbd>↑</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>↓</kbd> … ([spoilers below](#easter-eggs))
-
-## What it looks like
+### Screenshots
 
 ![NVIDIA Shield home, 4K](docs/screenshots/shield-home.jpg)
-<sub>NVIDIA Shield (4K capture, downscaled): Skippy's line, HUD cards, the round **Plex orbit** widget (next episode, continue watching with a progress ring, new arrivals, your week) and the dock. A real alert, too: the living-room door had been open for 2 hours.</sub>
+<sub>NVIDIA Shield (4K capture, downscaled): the status line, HUD cards, the round Plex widget (next episode,
+continue watching with a progress ring, new arrivals, the week) and the dock. The alert frame is real: the
+living-room door had been open for 2 hours.</sub>
 
 ![Fire TV home](docs/screenshots/firetv-home.jpg)
-<sub>Same launcher on the bedroom Fire TV Stick, with bedroom-aware lines.</sub>
+<sub>The same launcher on the bedroom Fire TV Stick 4K, with bedroom-specific lines.</sub>
 
 | The Bridge: live camera + lights | Camera full screen |
 |---|---|
 | ![Bridge panel](docs/screenshots/bridge.jpg) | ![Camera](docs/screenshots/shield-camera-fullscreen.jpg) |
 
-| Fire TV — all apps | The banners |
+| Fire TV: all apps | App banners |
 |---|---|
 | ![All apps](docs/screenshots/firetv-all-apps.jpg) | ![Banners](docs/screenshots/banners.png) |
 
-## Skippy talks (on screen, never out loud)
-
-Skippy is the Elder AI from *Expeditionary Force*: brilliant, arrogant, stuck in a TV box. Every 15 s he reads
-the house — Home Assistant, the patio camera's motion history, Plex, the clock — and picks a line — and knows which room is watching (living-room Shield or bedroom Fire TV):
-
-> *"27 motion alarms in the last hour. Either a very indecisive burglar, or the wind."* &nbsp;·&nbsp;
-> *"Living-room door open for 27 min. Is that an invitation or did you forget, monkey?"* &nbsp;·&nbsp;
-> *"Kitchen lights on at 3 am. I know what you are about to do. So does the fridge."*
-
-Red frame for alerts (real motion at the gate, door left open), gold for rare and dated lines (11:11, 13:37, Christmas,
-Friday the 13th, a 1-in-120 legendary). Windy days don't count: the palm tree triggers the camera 30 times an hour,
-so Skippy keeps score instead — *"Last hour: palm tree 28, burglars 0."* (Lines are in Brazilian Portuguese.)
-
-### Easter eggs
-
-| Konami code on the Bridge → *Protocolo Elder* | ◀◀◀ on the camera → *Modo Mira* | Konami on the home → hyperspace |
+| Konami code on the Bridge: "Protocolo Elder" | Left x3 on the camera: "Modo Mira" (aim mode) | Konami code on the home: hyperspace |
 |---|---|---|
 | ![Protocolo Elder](docs/screenshots/egg-elder.jpg) | ![Modo Mira](docs/screenshots/egg-mira.jpg) | ![Hyperspace](docs/screenshots/egg-hyperspace.jpg) |
 
-None of them touch the house: the planetary takeover is cancelled because *"the neighbour's Wi-Fi is too slow"*.
+The UI is laid out at 1920x1080 and scaled by the box; the Shield renders it at native 3840x2160 and the static
+wallpaper is rendered at 4K. The demo is a 1080p capture to keep it small.
 
-<details>
-<summary>🎮 <b>Cheat sheet</b> — click only if you give up (Skippy will judge you)</summary>
+## How it works
 
-<br>
+```
+Plex (continue watching, recently added) ─┐
+Home Assistant REST (/api/states, lights) ┼─► skippy-cards (Python, Docker, :8099) ──► /feed.json, /c/*.png, /api/quip, /api/plex
+go2rtc (/api/frame.jpeg snapshot) ────────┘          │                                   │
+                                                      │ /ponte, /api/lights, POST /api/light
+                                                      ▼                                   ▼
+                                     Bridge panel (WebView over a SurfaceView)   Launcher (Home.java + assets/home.html)
+go2rtc /api/stream.ts?src=<stream>&video=h264 ──► LiveCam.java (TS demux → MediaCodec → SurfaceView)
+```
 
-The **Konami code** is the most famous cheat in gaming history (Gradius, Contra, 1985). On a TV remote there is no
-<kbd>B</kbd> <kbd>A</kbd>, so here it is just the arrows, pressed one right after the other — no OK at the end:
+- **skippy-cards** (`cards/`) is a small Python HTTP server in Docker. It renders the cards in a background thread
+  (a cold render takes about 16 s because of Plex transcodes and the camera snapshot) and always answers
+  `/feed.json` from cache. It checks motion, the door and the lights every 20 s and re-renders when one changes,
+  otherwise every 4 min. Home Assistant and Plex tokens never leave the server; Plex posters go through an
+  allow-listed proxy (`/plex/img`).
+- **Status line** (`cards/quips.py`): the server rebuilds its view of the house (all Home Assistant states, one
+  hour of camera motion history, Plex sessions, the clock) at most every 15 s (context cache in `cards/app.py`).
+  `GET /api/quip` returns `{text, mood}` with mood `normal` (cyan), `alerta` (alert, red) or `rara` (rare, gold).
+  The Bridge panel ("TRANSMISSÃO", transmission) fetches a new line every 20 s and the launcher home every 30 s.
+  Priorities: live motion at the gate (ignored on windy days, when a palm tree triggers the camera dozens of times
+  an hour), dated lines (11:11, 13:37, Christmas, Friday the 13th), a door open for more than 20 min, Plex playing,
+  late night, then lights, climate and personality lines, plus a 1-in-120 "legendary" line. Lines are in Brazilian
+  Portuguese.
+- **Rooms**: the server maps the requesting IP to a room using `devices[]` in `house.json`, so lines and cards
+  differ per TV.
+- **Android app** (`channel-app/`, package `dev.skippy.channel`) is plain Java built without Gradle:
+  `aapt2` → `javac` → `d8` → `zipalign` → `apksigner`. `build.sh` generates `Config.java` and fills
+  `assets/home.html` from `house.json`.
+- **Live camera**: WebRTC/MSE inside the WebView used about 115 % CPU on the Shield; `MediaPlayer` with MPEG-TS
+  buffered about 7 s. `LiveCam` demuxes go2rtc's MPEG-TS and renders frames as soon as `MediaCodec` returns them:
+  about 1 s end to end (the camera's own delay), 7-20 % CPU. After 3 failures the page falls back to go2rtc's
+  WebRTC player.
+- **Fire TV**: Fire OS refuses every way of replacing its home (accessibility service, `set-home-activity`,
+  disabling the Amazon launcher), so `Watch.java` polls `UsageStatsManager` every 400 ms and starts the launcher
+  when the Amazon home comes forward; Android 7 blocks background starts for 5 s after Home.
 
-<p align="center"><kbd>↑</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> <kbd>←</kbd> <kbd>→</kbd></p>
+Every measurement and device quirk is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-| Where | What to press | What happens |
-|---|---|---|
-| Home screen | Konami code | **Hyperspace jump**: the stars stretch, a ridiculous destination shows up (*"Destination: the fridge"*), and you land exactly where you were. |
-| Bridge panel | Konami code | **Protocolo Elder**: red alarm, a planetary takeover typed out live… then cancelled. |
-| Bridge panel, focus on the camera | <kbd>←</kbd> <kbd>←</kbd> <kbd>←</kbd> fast | **Modo Mira**: full-screen live camera with a rotating reticle "classifying" made-up threats (the palm tree, the neighbour's cat). <kbd>Back</kbd> leaves. |
-| Bridge panel | don't touch the remote for 3 min | Skippy gets lonely and complains. Press anything and he notices. |
-| Any card | just wait | Gold lines are rare: 11:11, 13:37, midnight, holidays, Friday the 13th, and a **1-in-120 legendary** line. |
+### Repository layout
 
-Want to see them without a remote? Open `http://<cards-server>:8099/ponte?egg=elder` or `?egg=mira` in a browser.
+```
+.
+├── house.example.json  template for house.json (schema: docs/HOUSE.md); house.json itself is git-ignored
+├── AGENTS.md           runbook for an AI coding agent rebuilding this for another house
+├── tools/discover_ha.py  drafts a house.json from any Home Assistant (read-only)
+├── deploy-cards.sh     ships the cards server to the Docker host and smoke-tests it
+├── gen.py              static 4K wallpaper + 640x360 app banners (Simple Icons → cyan glow HUD frame)
+├── anim.py             animated wallpaper: raw RGB frames on stdout → ffmpeg (parallax stars, nebula, radar)
+├── build-iconpack.sh   "Skippy Icon Pack" APK (ADW icon-pack format, no code) for Projectivy Launcher
+├── cards/              skippy-cards server (Docker)
+│   ├── app.py          /feed.json, /c/*.png, /ponte, /api/lights, POST /api/light, /api/quip, /api/plex, /health
+│   ├── quips.py        status-line logic: reads the house and picks a line
+│   ├── plexw.py        Plex widget data: now playing, continue, next episode, new arrivals, the week
+│   └── ponte.html      Bridge panel UI (D-pad driven)
+├── channel-app/        Android app dev.skippy.channel (plain Java, no Gradle)
+│   ├── src/…/Home.java     the launcher: looping video wallpaper + assets/home.html in a WebView
+│   ├── src/…/Watch.java    Fire TV: brings the launcher back when the Amazon home shows up
+│   ├── src/…/Ponte.java    Bridge panel: transparent WebView over a SurfaceView
+│   ├── src/…/LiveCam.java  MPEG-TS demuxer → MediaCodec (low-latency live camera)
+│   ├── src/…/Sync.java     pulls the feed → Watch Next + preview channel (Projectivy option, Android 8+)
+│   └── src/…/Main.java     card click trampoline (Projectivy rewrites the card intent package)
+├── vidaa/              Hisense VIDAA: web home, nginx, MQTT bridge, deploy script (docs/VIDAA.md)
+├── fonts/              Orbitron, Rajdhani (SIL OFL)
+└── logos/              Simple Icons SVGs and a few drawn ones
+```
 
-</details>
+## Requirements
 
-## Where it runs
+- A Linux machine on the same LAN as the TVs with `python3` (3.12), `ffmpeg`, `adb`, `ssh` and `curl`.
+- Python packages `pillow numpy scipy cairosvg` in `./venv` (cairosvg needs the system `libcairo2`).
+- Android build tools without Android Studio, in `$ANDROID_BUILD_DIR` (default `$HOME/android-build`):
+  `jdk-*/` (JDK 21), `android-14/` (build-tools 34: `aapt2`, `d8`, `zipalign`, `apksigner`,
+  `core-lambda-stubs.jar`) and `android-34/android.jar`.
+- An APK signing keystore outside the repo (`KEYSTORE`, `KEYSTORE_PASS_FILE`).
+- An always-on Docker host (with `docker compose`) reachable over SSH; it runs skippy-cards on port 8099.
+- Home Assistant with a long-lived access token. Optional: Plex Media Server (token), go2rtc with an H.264 stream.
+
+Tested devices:
 
 | Device | Status | How it is themed |
 |---|---|---|
-| **NVIDIA Shield TV, 1st gen** (2015, Tegra X1) — Android TV 11, 4K — living room | ✅ tested daily | The Skippy launcher as the real system home (instant Home button). Projectivy + icon pack + *Watch Next* cards also supported as a lighter option |
-| **Amazon Fire TV Stick 4K, 1st gen** (AFTMM) — Fire OS 6 / Android 7.1 — bedroom | ✅ tested daily | The same Skippy launcher; Amazon does not allow replacing its home, so a watcher brings Skippy back ~5 s after Home |
-| **Hisense 55A60QUV** — VIDAA (not Android), 4K — kitchen | ✅ tested | The same home as a web page behind a tile; a bridge on the Docker host replaces VIDAA's home ~3-5 s after Home and launches native apps; animated background in real 4K via the video plane. Guide: [docs/VIDAA.md](docs/VIDAA.md) |
-| Any other Android TV / Google TV (Chromecast with Google TV, Mi Box, TCL, Philips…) | ⚠️ should work, not tested | Same app, Android 7.1+; the dock picks whichever of its apps are installed |
+| NVIDIA Shield TV 1st gen (2015, Tegra X1), Android TV 11, 4K | used daily | The launcher is the real system home (instant Home button). Projectivy + icon pack + Watch Next cards also supported as a lighter option |
+| Amazon Fire TV Stick 4K 1st gen (AFTMM), Fire OS 6 / Android 7.1 | used daily | Same launcher; Amazon does not allow replacing its home, so the watcher brings it back about 5 s after Home |
+| Hisense 55A60QUV, VIDAA (not Android), 4K | tested | Same home as a web page behind a tile; a bridge on the Docker host replaces VIDAA's home 3-5 s after Home. Guide: [docs/VIDAA.md](docs/VIDAA.md) |
+| Other Android TV / Google TV 7.1+ (Chromecast with Google TV, Mi Box…) | untested | Same APK (`minSdkVersion` 25); the dock uses whichever of its apps are installed |
 
-The whole thing is plain Android APIs (Watch Next, `MediaCodec`, `WebView`), a small Python server and
-Home Assistant's REST API — nothing Shield- or Amazon-specific except the workarounds documented in
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). If you try it on another box, an issue with the model
-and what happened is very welcome.
+## Quick start
 
-## Want one for your house? Ask an AI agent
+1. Describe the house. Copy the template and fill in the `<placeholders>` (schema in [docs/HOUSE.md](docs/HOUSE.md)),
+   or draft it from Home Assistant:
 
-The code is generic; **the house is one file**, [`house.json`](house.json) (Home Assistant entities, lights,
-camera, Plex, the TV boxes and their rooms — no secrets). An AI coding agent with a shell and `adb` on your LAN
-(Claude Code, Codex, Cursor…) can rebuild it for you. Paste this:
+   ```bash
+   cp house.example.json house.json
+   # or: HASS_URL=http://<ha-host>:8123 HASS_TOKEN=<token> python3 tools/discover_ha.py > house.json
+   ```
+
+2. Render the wallpapers and banners into `dist/out/` (git-ignored):
+
+   ```bash
+   python3 -m venv venv && venv/bin/pip install pillow numpy scipy cairosvg
+   venv/bin/python -I gen.py $PWD "BRIDGE 01  ·  SALA  ·  NODE <tv-ip>"     # dist/out/wallpaper.jpg + banner-*.png
+   HUD_NODE='BRIDGE 01  ·  SALA  ·  NODE <tv-ip>' venv/bin/python -I anim.py $PWD | \
+     ffmpeg -f rawvideo -pix_fmt rgb24 -s 1920x1080 -r 30 -i - \
+     -c:v libx264 -preset slow -crf 19 -pix_fmt yuv420p dist/out/wallpaper-anim.mp4
+   HUD_NODE='BRIDGE 02  ·  QUARTO  ·  NODE <fire-tv-ip>' venv/bin/python -I anim.py $PWD | \
+     ffmpeg -f rawvideo -pix_fmt rgb24 -s 1920x1080 -r 30 -i - \
+     -c:v libx264 -preset slow -crf 19 -pix_fmt yuv420p dist/out/wallpaper-anim-quarto.mp4
+   ```
+
+   The MP4 paths must match `devices[].wallpaper` in `house.json`.
+
+3. Deploy the cards server. Create `<remote-dir>/.env` on the Docker host from `cards/.env.example`
+   (`chmod 600`), then:
+
+   ```bash
+   ./deploy-cards.sh <ssh-host> <remote-dir>      # copies code + house.json, rebuilds, prints the card list
+   ```
+
+4. Build and install the APK, then make it the home screen:
+
+   ```bash
+   export ANDROID_BUILD_DIR=$HOME/android-build KEYSTORE=/path/to/skippy.keystore KEYSTORE_PASS_FILE=/path/to/skippy-keystore.pass
+   channel-app/build.sh                                       # dist/skippy-channel.apk
+   adb connect <tv-ip>:5555
+   adb -s <tv-ip>:5555 install -r dist/skippy-channel.apk
+   adb -s <tv-ip>:5555 shell dumpsys deviceidle whitelist +dev.skippy.channel     # Doze would cut its network
+   adb -s <tv-ip>:5555 shell cmd package set-home-activity dev.skippy.channel/.HomeAlias   # Android TV
+   adb -s <tv-ip>:5555 shell am start -n dev.skippy.channel/.Home                 # opens the launcher on the TV
+   ```
+
+## Configuration
+
+Server secrets, in `.env` next to `docker-compose.yml` on the Docker host (template: `cards/.env.example`):
+
+| Variable / key | Required | Default | Description |
+|---|---|---|---|
+| `HASS_TOKEN` | yes | - | Home Assistant long-lived access token |
+| `PLEX_TOKEN` | yes (may be empty) | - | `PlexOnlineToken`; leave empty without Plex |
+| `PLEX_MID` | no | `plex.machine_id` | Plex server `machineIdentifier` override |
+| `HASS_URL`, `PLEX_URL`, `PUBLIC_URL`, `GO2RTC_URL` | no | values from `house.json` | Override the matching `house.json` URLs |
+| `HOUSE_JSON` | no | `/app/house.json` | Path of the house file inside the container (also read by `channel-app/build.sh`, default `./house.json`) |
+
+House description, `house.json` (template: `house.example.json`; full schema: [docs/HOUSE.md](docs/HOUSE.md)):
+
+| Variable / key | Required | Default | Description |
+|---|---|---|---|
+| `server.public_url` | yes | - | `http://<docker-host-ip>:8099`, how the TVs reach skippy-cards; baked into the APK |
+| `hass.url` | yes | - | Home Assistant URL as seen from the Docker host |
+| `plex.url`, `plex.machine_id` | no | - | Plex server and its `machineIdentifier` (`curl <plex>:32400/identity`) |
+| `camera.go2rtc`, `camera.stream` | no | - | go2rtc base URL and stream name (H.264 for the live view) |
+| `camera.label`, `camera.title` | with camera | - | HUD and card texts |
+| `camera.motion_entity` | with camera | - | `binary_sensor` that fires on motion |
+| `camera.windy_per_hour` | no | `15` | Above this many motion events per hour, motion is no longer treated as an alert |
+| `door.entity`, `door.room` | no | - | Door contact sensor and the room name used in lines |
+| `climate.*` | yes | - | Indoor/outdoor temperature and humidity sensors, `weather.*` entity, `is_night` sensor |
+| `lights[]` | yes | - | Light groups shown on the Bridge panel; this list is the server's allow-list |
+| `devices[]` | yes | - | One entry per TV: `ip`, `room`, HUD texts, `media_player`, `wallpaper`, `fire_tv`, optional `vidaa` block |
+| `extras.laptop_open` | no | - | Optional `input_boolean` used by one line |
+
+Build and asset scripts:
+
+| Variable / key | Required | Default | Description |
+|---|---|---|---|
+| `ANDROID_BUILD_DIR` | no | `$HOME/android-build` | Toolchain folder used by `channel-app/build.sh` and `build-iconpack.sh` |
+| `KEYSTORE`, `KEYSTORE_PASS_FILE` | yes in practice | a personal path under `$HOME` | APK signing keystore and a file with its password; keep both outside the repo |
+| `HUD_NODE` | no | `BRIDGE 01  ·  SALA  ·  NODE <tv-ip>` | HUD text baked into the wallpaper by `anim.py` and `gen.py` (`gen.py` also accepts it as the second argument) |
+| `SCALE` | no | `1` | `anim.py` render scale; `2` renders 3840x2160 for the VIDAA video plane |
+
+## Usage
+
+Deploy and device commands:
+
+```bash
+./deploy-cards.sh <ssh-host> <remote-dir>                       # redeploy the server after any change in cards/
+./build-iconpack.sh                                              # dist/skippy-iconpack.apk (Projectivy option)
+adb -s <fire-tv-ip>:5555 shell appops set dev.skippy.channel GET_USAGE_STATS allow   # Fire TV: Home watcher
+vidaa/deploy.sh [tv-ip]                                          # VIDAA web home + bridge (docs/VIDAA.md)
+curl -s http://<docker-host-ip>:8099/api/quip                    # current status line as JSON
+```
+
+Remote control on the Bridge panel: Up/Down move between lights, OK toggles, the living-room dimmer is a separate
+bar (Left/Right, 10 % steps), Left on any light goes to the camera, OK on the camera opens it full screen, Back
+leaves.
+
+Hidden screens (screen only; nothing in the house is touched):
+
+| Where | Keys | What happens |
+|---|---|---|
+| Home screen | Up Up Down Down Left Right Left Right | Hyperspace jump animation, then back to the home |
+| Bridge panel | Up Up Down Down Left Right Left Right | "Protocolo Elder" (Elder protocol): red alarm and a fake takeover message |
+| Bridge panel, focus on the camera | Left Left Left, fast | "Modo Mira" (aim mode): full-screen camera with a reticle labelling made-up targets; Back leaves |
+| Bridge panel | no key for 3 min | Idle message; the next key gets a reply |
+
+Without a remote: `http://<docker-host-ip>:8099/ponte?egg=elder` or `?egg=mira` in a browser.
+
+Adapting it to another house with an AI coding agent that has a shell and `adb` on the LAN: point it at
+[AGENTS.md](AGENTS.md) (the runbook: what to ask, what to discover, build and deploy order, pass criteria),
+[docs/HOUSE.md](docs/HOUSE.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), for example:
 
 > Read https://github.com/cascodigital/skippy-tv, starting with `AGENTS.md`, then `docs/HOUSE.md`.
 > Build the same home screen for my TV box (model: ___, room: ___). My Home Assistant is at ___ (I will give you
@@ -112,89 +269,23 @@ camera, Plex, the TV boxes and their rooms — no secrets). An AI coding agent w
 > Camera via go2rtc at ___ (or none). Plex at ___ (or none). Docker host: ___. Never commit tokens, never touch a
 > light without telling me, and show me a TV screenshot after every visual step.
 
-What the agent gets:
-- [`AGENTS.md`](AGENTS.md) — the runbook: what to ask the human, what to discover, which path fits the device
-  (real home on Android TV, the ~5 s workaround on Fire TV), build/deploy order and the pass criteria for each step.
-- [`tools/discover_ha.py`](tools/discover_ha.py) — read-only scan of a Home Assistant that drafts `house.json`
-  (lights per area, which ones dim, temperature/humidity indoor vs outdoor, door, motion, weather) and explains
-  every guess.
-- [`docs/HOUSE.md`](docs/HOUSE.md) — the schema, and the few things that are taste rather than wiring
-  (Skippy's lines, the dock, the banners).
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — how it all works and every device trap we measured.
-- [`docs/VIDAA.md`](docs/VIDAA.md) — Hisense/Toshiba VIDAA TVs: pairing, tile, bridge, 4K background, what did not work.
+## Limitations
 
-## Pieces
-
-```
-.
-├── house.json          everything that belongs to this house (schema: docs/HOUSE.md)
-├── AGENTS.md           runbook for an AI agent rebuilding this for another house
-├── tools/discover_ha.py  drafts a house.json from any Home Assistant (read-only)
-├── deploy-cards.sh     ships the cards server to the Docker host and smoke-tests it
-├── gen.py              static wallpaper + 640x360 neon banners (Simple Icons → cyan glow HUD frame)
-├── anim.py             animated wallpaper: raw RGB frames → ffmpeg (parallax stars, drifting nebula, radar, shooting star)
-├── build-iconpack.sh   "Skippy Icon Pack" APK (ADW icon-pack format, no code) for Projectivy
-├── cards/              skippy-cards: Python server (Docker) that renders the HUD cards and serves the Bridge panel
-│   ├── app.py          /feed.json, /c/*.png, /ponte, /api/lights, POST /api/light (allow-list), /api/quip
-│   ├── quips.py        Skippy's lines: reads the house (HA, Plex, clock) and picks a context-aware joke
-│   ├── plexw.py        Plex orbit: now playing, continue, next episode, new arrivals, your week
-│   └── ponte.html      Bridge panel UI (D-pad driven)
-├── channel-app/        Android app dev.skippy.channel (plain Java, no Gradle)
-│   ├── src/…/Sync.java     pulls the feed → Watch Next + preview channel (Android 8+)
-│   ├── src/…/Main.java     card click trampoline (Projectivy rewrites the card intent package)
-│   ├── src/…/Ponte.java    Bridge panel: transparent WebView over a SurfaceView
-│   ├── src/…/LiveCam.java  MPEG-TS demuxer → MediaCodec (low-latency live camera)
-│   ├── src/…/Home.java     the Skippy launcher (Shield + Fire TV): looping video wallpaper + assets/home.html
-│   └── src/…/Watch.java    Fire TV: brings Home back when the Amazon home shows up
-├── fonts/              Orbitron, Rajdhani (SIL OFL)
-└── logos/              Simple Icons SVGs + a few drawn ones
-```
-
-Architecture, data flow and every device quirk we hit (all measured): [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-
-## Build
-
-Toolchain without root or Android Studio: JDK 21, build-tools 34, `android-34.jar`
-in `~/ai/tools/android-build/` (see the doc). Python 3.12 with `pillow numpy scipy cairosvg` in `./venv`.
-
-```bash
-python3 -m venv venv && venv/bin/pip install pillow numpy scipy cairosvg
-venv/bin/python -I gen.py $PWD                       # dist/out/wallpaper.jpg + banners
-venv/bin/python -I anim.py $PWD | ffmpeg -f rawvideo -pix_fmt rgb24 -s 1920x1080 -r 30 -i - \
-  -c:v libx264 -preset slow -crf 19 -pix_fmt yuv420p dist/out/wallpaper-anim.mp4
-HUD_NODE='BRIDGE 02  ·  QUARTO  ·  NODE 192.168.2.140' venv/bin/python -I anim.py $PWD | ffmpeg … dist/out/wallpaper-anim-quarto.mp4
-./build-iconpack.sh                                  # dist/skippy-iconpack.apk
-channel-app/build.sh                                 # dist/skippy-channel.apk
-```
-
-Signing key and password live **outside** the repo: `~/ai/keys/skippy.keystore` and
-`~/ai/keys/skippy-keystore.pass` (override with `KEYSTORE` / `KEYSTORE_PASS_FILE`).
-Everything generated goes to `dist/` (git-ignored).
-
-## Deploy
-
-```bash
-./deploy-cards.sh h46 /dados/dockers/skippy-cards      # cards server: copies code + house.json, rebuilds, smoke-tests
-# the .env with HASS_TOKEN / PLEX_TOKEN lives only on the host (see cards/.env.example)
-
-adb -s <tv>:5555 install -r dist/skippy-channel.apk
-adb -s <tv>:5555 shell dumpsys deviceidle whitelist +dev.skippy.channel             # Doze would cut its network
-adb -s <android-tv>:5555 shell cmd package set-home-activity dev.skippy.channel/.HomeAlias   # Android TV: real home
-adb -s <fire-tv>:5555 shell appops set dev.skippy.channel GET_USAGE_STATS allow      # Fire TV: Home watcher
-```
-
-## Security notes
-
-Built for a private home LAN. The cards server keeps the Home Assistant and Plex tokens
-server-side and only exposes an **allow-list** of four light groups
-(`POST /api/light`, anything else → 403) — but it has **no authentication**: anyone on the
-LAN can toggle those four lights. Do not expose port 8099 to the internet.
-
-## Credits
-
-Fonts: Orbitron and Rajdhani (SIL Open Font License). Logos: [Simple Icons](https://simpleicons.org) (CC0);
-brands belong to their owners. Launcher on the Shield: Projectivy Launcher by spocky.
+- Built for a private home LAN: the cards server has no authentication. Anyone on the LAN can read the feed and
+  toggle the allow-listed lights (`POST /api/light`, anything else returns 403). Do not expose port 8099 to the
+  internet.
+- Fire TV cannot have its home replaced; the Amazon home shows for about 5 s after each Home press.
+- VIDAA pages are capped at 1080p (only the `<video>` background reaches 4K) and VIDAA's own home flashes for
+  about 1 s before the bridge takes over.
+- The status lines, UI labels and several light/room ids (`sala`, `quarto`, `cozinha`, `rua`) are Brazilian
+  Portuguese and specific to this house; with other ids those lines never fire.
+- Only the NVIDIA Shield (1st gen), the Fire TV Stick 4K (1st gen) and one Hisense VIDAA set have been tested.
+- `adb shell dumpsys deviceidle whitelist` does not survive a clean reinstall of the app.
+- The cards image copies its files (no bind mount): every server change needs `deploy-cards.sh`.
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+Fonts: Orbitron and Rajdhani (SIL Open Font License). Logos: [Simple Icons](https://simpleicons.org) (CC0); brands
+belong to their owners. Optional launcher on the Shield: Projectivy Launcher.

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Gera o APK "Skippy Icon Pack" (banners 16:9 pro Projectivy) a partir de dist/out/banner-*.png (gerados pelo gen.py)
 set -e
-P=$(cd "$(dirname "$0")" && pwd); T=~/ai/tools/android-build
+P=$(cd "$(dirname "$0")" && pwd); T=${ANDROID_BUILD_DIR:-$HOME/android-build}   # JDK + build-tools + android.jar (README: Requirements)
 BT=$T/android-14; JAR=$T/android-34/android.jar; export JAVA_HOME=$(ls -d $T/jdk-*); export PATH=$JAVA_HOME/bin:$PATH
 W=$P/dist/iconpack-build; rm -rf $W; mkdir -p $W/res/drawable-nodpi $W/res/xml $W/res/values $W/assets
 declare -A C=(

@@ -1,7 +1,8 @@
 # AGENTS.md — build Skippy TV for another house
 
 You are an AI coding agent (Claude Code, Codex, Cursor…) asked to give a user "something like this".
-This repo is a **working build for one real house**; the house is described in one file, `house.json`.
+This repo is a **working build for one real house**; the house is described in one file, `house.json`
+(git-ignored; `house.example.json` is the template with `<placeholders>`).
 Your job is to produce a new `house.json`, adjust taste where the user wants, build, deploy and **prove it works
 on the TV**. Read `docs/HOUSE.md` (the schema) and `docs/ARCHITECTURE.md` (how it works + every trap we measured)
 before writing anything.
@@ -49,7 +50,7 @@ Both: `adb shell dumpsys deviceidle whitelist +dev.skippy.channel` (Doze cuts th
 
 ## 4. Build and deploy, in this order, verifying each step
 
-1. **Assets**: `venv/bin/python -I gen.py $PWD` and `anim.py` (README → Build). Open the PNG and a video frame and
+1. **Assets**: `venv/bin/python -I gen.py $PWD` and `anim.py` (README → Quick start). Open the PNG and a video frame and
    *look*. Change `HUD_NODE` per room. Add banners for the user's apps in `gen.py` → `APPS`.
 2. **Server**: create `.env` on the Docker host from `cards/.env.example` (chmod 600), then `./deploy-cards.sh <ssh-host> <dir>`.
    Pass: it prints a non-empty card list; `curl <server>/api/quip` returns a line; `/api/lights` matches HA.

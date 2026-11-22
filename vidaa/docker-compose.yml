@@ -1,5 +1,5 @@
-# Exemplo para um host novo. Nesta casa os dois servicos rodam dentro da stack tv4k do dotpi
-# (tv4k-web e tv4k-bridge), mesma estrutura de pastas: ./app e ./bridge.
+# Example for a new Docker host (folders ./app and ./bridge, filled by vidaa/deploy.sh).
+# Replace the <placeholders> with the values from house.json.
 services:
   skippy-vidaa-web:
     image: nginx:1.27-alpine
@@ -14,9 +14,9 @@ services:
     environment:
       TZ: America/Sao_Paulo
       SIDEE_HOME: /app/sideehome
-      TV_HOST: 192.168.2.246                                # IP fixo da TV (reserva DHCP)
-      CARDS: http://192.168.2.46:8099                       # server.public_url
-      SKIPPY_URL: http://192.168.2.102:8780/skippy.html     # devices[].vidaa.web + /skippy.html
+      TV_HOST: <vidaa-tv-ip>                                # IP fixo da TV (reserva DHCP)
+      CARDS: http://<docker-host-ip>:8099                   # server.public_url
+      SKIPPY_URL: http://<vidaa-host>:8780/skippy.html      # devices[].vidaa.web + /skippy.html
       PORT: "8781"
     ports: ["8781:8781"]
     volumes: ["./bridge:/app"]

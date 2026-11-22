@@ -5,8 +5,11 @@ start (`HOUSE_JSON`, default `/app/house.json`), `channel-app/build.sh` bakes th
 (`Config.java` + `assets/home.html`) and picks the wallpapers. **Tokens never go here** — they live in
 `cards/.env` on the Docker host (`HASS_TOKEN`, `PLEX_TOKEN`, see `cards/.env.example`).
 
-Start from a draft: `HASS_URL=… HASS_TOKEN=… python3 tools/discover_ha.py > house.json` (read-only; it explains
-every guess on stderr and leaves `TODO` where it cannot know).
+`house.json` is git-ignored: it holds LAN addresses and entity ids of a real house. The repo ships
+[`house.example.json`](../house.example.json) with `<placeholders>`; copy it (`cp house.example.json house.json`) and
+fill it in, or start from a draft: `HASS_URL=… HASS_TOKEN=… python3 tools/discover_ha.py > house.json` (read-only;
+it explains every guess on stderr and leaves `TODO` where it cannot know). `deploy-cards.sh`, `channel-app/build.sh`
+and `vidaa/deploy.sh` stop with a message if `house.json` is missing.
 
 | Key | Meaning | Required |
 |---|---|---|
