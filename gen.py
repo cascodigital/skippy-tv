@@ -1,4 +1,4 @@
-import io, re, sys, numpy as np, cairosvg
+import io, os, re, sys, numpy as np, cairosvg
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from scipy.ndimage import gaussian_filter
 
@@ -87,7 +87,7 @@ for i in range(40):  # ticks along left edge
 fo = ImageFont.truetype(F + 'Orbitron.ttf', 34); fo.set_variation_by_name('Medium')
 fs = ImageFont.truetype(F + 'Rajdhani-SemiBold.ttf', 34)
 hd.text((m + 50, m + 40), 'SKIPPY  //  ELDER AI', font=fo, fill=CYAN + (150,))
-hd.text((m + 50, m + 90), (sys.argv[2] if len(sys.argv) > 2 else 'BRIDGE 01  ·  SALA  ·  NODE 192.168.2.111'), font=fs, fill=CYAN + (90,))
+hd.text((m + 50, m + 90), (sys.argv[2] if len(sys.argv) > 2 else os.environ.get('HUD_NODE', 'BRIDGE 01  ·  SALA  ·  NODE <tv-ip>')), font=fs, fill=CYAN + (90,))
 hd.arc([W - 1320, 900, W - 120, 2100], 200, 300, fill=CYAN + (40,), width=3)
 hd.arc([W - 1240, 980, W - 200, 2020], 210, 280, fill=CYAN + (70,), width=2)
 glow = hud.filter(ImageFilter.GaussianBlur(6))

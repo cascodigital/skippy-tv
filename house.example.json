@@ -1,0 +1,49 @@
+{
+  "_doc": "Example house description. Copy to house.json (git-ignored) and replace every <placeholder>. Tokens do NOT go here (they live in cards/.env). Schema: docs/HOUSE.md. To draft one from your Home Assistant: tools/discover_ha.py.",
+  "server": {
+    "public_url": "http://<docker-host-ip>:8099"
+  },
+  "hass": {
+    "url": "http://<ha-host>:8123"
+  },
+  "plex": {
+    "url": "http://<plex-host>:32400",
+    "machine_id": "<plex-machine-id>"
+  },
+  "camera": {
+    "go2rtc": "http://<go2rtc-host>:1984",
+    "stream": "<go2rtc-stream-name>",
+    "label": "PÁTIO",
+    "title": "Câmera do pátio",
+    "motion_entity": "binary_sensor.<camera>_motion_alarm",
+    "windy_per_hour": 15
+  },
+  "door": {
+    "entity": "binary_sensor.<door>_door",
+    "room": "sala"
+  },
+  "climate": {
+    "label": "SALA",
+    "indoor_temp": "sensor.<indoor>_temperature",
+    "indoor_hum": "sensor.<indoor>_humidity",
+    "outdoor_temp": "sensor.<outdoor-sensor-ieee>_temperature",
+    "outdoor_hum": "sensor.<outdoor-sensor-ieee>_humidity",
+    "weather": "weather.forecast_home",
+    "is_night": "binary_sensor.<is-night>"
+  },
+  "lights": [
+    {"id": "sala", "name": "Sala", "entities": ["light.<living-room>"], "dimmable": true},
+    {"id": "quarto", "name": "Quarto", "entities": ["light.<bedroom>"]},
+    {"id": "cozinha", "name": "Cozinha", "entities": ["light.<kitchen-1>", "light.<kitchen-2>"]},
+    {"id": "rua", "name": "Rua", "entities": ["light.<outdoor>"], "outdoor": true}
+  ],
+  "devices": [
+    {"ip": "<android-tv-ip>", "room": "sala", "bridge": "BRIDGE 01", "label": "SALA", "media_player": "media_player.<android-tv>", "wallpaper": "dist/out/wallpaper-anim.mp4"},
+    {"ip": "<fire-tv-ip>", "room": "quarto", "bridge": "BRIDGE 02", "label": "QUARTO", "media_player": "media_player.<fire-tv>", "wallpaper": "dist/out/wallpaper-anim-quarto.mp4", "fire_tv": true},
+    {"ip": "<vidaa-tv-ip>", "room": "cozinha", "bridge": "BRIDGE 03", "label": "COZINHA", "media_player": "media_player.<vidaa-tv>", "wallpaper": "dist/out/wallpaper-4k-cozinha.mp4",
+     "vidaa": {"ssh": "<ssh-host>", "dir": "<remote-dir>", "web": "http://<vidaa-host>:8780", "bridge": "http://<vidaa-host>:8781", "tv4k": ""}}
+  ],
+  "extras": {
+    "laptop_open": "input_boolean.<laptop-open>"
+  }
+}

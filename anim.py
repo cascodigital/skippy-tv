@@ -76,7 +76,7 @@ for i in range(40):
 fo = ImageFont.truetype(F + 'Orbitron.ttf', 17 * K); fo.set_variation_by_name('Medium')
 fs = ImageFont.truetype(F + 'Rajdhani-SemiBold.ttf', 17 * K)
 hd.text((m + 25 * K, m + 20 * K), 'SKIPPY  //  ELDER AI', font=fo, fill=CYAN + (160,))
-hd.text((m + 25 * K, m + 45 * K), os.environ.get('HUD_NODE', 'BRIDGE 01  ·  SALA  ·  NODE 192.168.2.111'), font=fs, fill=CYAN + (100,))
+hd.text((m + 25 * K, m + 45 * K), os.environ.get('HUD_NODE', 'BRIDGE 01  ·  SALA  ·  NODE <tv-ip>'), font=fs, fill=CYAN + (100,))
 hud = Image.alpha_composite(hud.filter(ImageFilter.GaussianBlur(3 * K)), hud)
 over.alpha_composite(hud)
 OV = np.array(over).astype(np.float32) / 255.
